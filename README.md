@@ -5,4 +5,4 @@
 - Jordan Orvik
 - Mun Shon
 - Mitchell Deevers
-- Alexander haufe
+- Alexander Haufe
