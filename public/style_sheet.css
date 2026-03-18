@@ -1,0 +1,13 @@
+:root {
+    --accent: #FCA311;
+    --accent-hover: #E0920F;
+    --white: #FFFFFF;
+
+    /* Light Mode Mapping */
+    --bg-main: #FFFFFF;
+    --bg-surface: #E5E5E5;
+    --text-main: #000000;
+    --text-muted: #14213D;
+    --border: #cccccc;
+    --card-bg: #FFFFFF;
+}
