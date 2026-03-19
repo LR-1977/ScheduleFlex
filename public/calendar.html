@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang = "en" data-theme="light">
+    <head>
+        <meta charset = "UTF-8">
+        <meta name="viewport" content="width=device-width, inital-scale=1.0">
+        <title>ScheduleFlex | Calendar</title>
+        <link rel="stylesheet" href="style_sheet.css">
+    </head>
+    <body> 
+        <header class="main-header">
+            <!-- Logo -->
+            <div class="logo">Schedule<span>Flex</span></div> 
+            <!-- Navigation Bar -->
+            <nav>
+                <ul id="nav-links" class="nav-list"></ul>   
+            </nav>
+        </header>
+
+        <!-- TEMP: Role Switch for different Nav Links -->
+        <div class = "header-controls">
+            <button class="role-switcher" onclick="switchRoleTest()">Switch Role</button>
+        </div>
+        <!-- Calendar -->
+        <main class="dashboard">
+            <section class="calendar-container">
+                <div class="calendar-header">
+                    <h2 id="month-display">Month Year</h2>
+                    <div class="nav-btns">
+                        <button class="btn-icon" onclick="changeMonth(-1)">Prev Month</button>
+                        <button class="btn-icon" onclick="changeMonth(1)">Next Month</button>
+                    </div>  
+                </div>
+
+                <div class="calendar-grid" id="calendar-grid"></div>
+            </section>
+        </main>
+
+        <!-- Scripts -->
+        <script src ="navbar.js"></script>
+        <script src="calendar.js"></script>
+    </body>
+</html>
