@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ScheduleFlex | Login</title>
+        <link rel="stylesheet" href="src/styles/main.css" />
+    </head>
+    <body>
+        <header>WIP</header>
+        <main>
+            <section class="auth-container">
+                <button type="button" data-show-form="accept-invite-form">
+                    Accept an invite
+                </button>
+                <button type="button" data-show-form="login-form">
+                    Log in
+                </button>
+                <span>Or:</span>
+                <button
+                    type="button"
+                    data-show-form="create-admin-account-form"
+                >
+                    Create Administrative Account
+                </button>
+            </section>
+
+            <section id="auth-msg"></section>
+
+            <!-- ###################### INVITATIONS FORM ###################### -->
+            <form id="accept-invite-form" style="display: none">
+                <div>
+                    <p>Paste your invitation code:</p>
+                    <span>
+                        <input required type="text" id="invite-code" />
+                        <input type="submit" value="accept invite" />
+                    </span>
+                </div>
+            </form>
+            <form id="create-password-form" style="display: none">
+                <div>
+                    <p id="invitee-email" style="color: #ccc"></p>
+                    <p>Enter a new password:</p>
+                    <p>
+                        Minimum 6 characters<br />At least one letter<br />At
+                        least one number
+                    </p>
+                    <span>
+                        <input required type="password" id="new-password" />
+                        <input type="submit" value="submit" />
+                    </span>
+                </div>
+            </form>
+
+            <!-- ###################### STANDARD LOGIN FORM ###################### -->
+            <form id="login-form" style="display: none">
+                <div>
+                    <label for="email">Email</label>
+                    <input required type="text" id="email" />
+                </div>
+                <div>
+                    <label for="password">Password</label>
+                    <input required type="password" id="password" />
+                </div>
+                <div>
+                    <input type="submit" value="submit" />
+                </div>
+            </form>
+
+            <!-- ###################### CREATE ACCOUNT FORM ###################### -->
+            <form id="create-admin-account-form" style="display: none">
+                <div>
+                    <label for="admin-email">Email</label>
+                    <input required type="text" id="admin-email" />
+                </div>
+                <div>
+                    <label for="admin-password">Create a Password</label>
+                    <input required type="password" id="admin-password" />
+                </div>
+                <div>
+                    <input type="submit" value="submit" />
+                </div>
+            </form>
+        </main>
+        <footer></footer>
+        <script src="login.js"></script>
+    </body>
+</html>
