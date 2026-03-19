@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ScheduleFlex Login</title>
+        <!-- <link rel="stylesheet" href="src/styles/main.css" /> -->
+        <script>
+            // FIXME: all these functions need to access actual stored elements
+            // temporary
+            var TEST_USERS = {
+                "user1@gmail.com": { password: "12345", type: "admin" },
+                "user2@gmail.com": { password: "pass123", type: "user" },
+                "user3@gmail.com": { password: "password$abc", type: "user" },
+            };
+            var TEST_INVITATIONS = new Map([
+                // unique code -> invited user
+                ["13a93e8f-48d7-4b47-a61a-f6c967c0fe36", "user4@gmail.com"],
+            ]);
+
+            // basic email -> password matching for hard-code account testing
+            function validateLogin(event) {
+                if (event) event.preventDefault();
+
+                var email = document.getElementById("email").value;
+                var password = document.getElementById("password").value;
+                const confirm_msg = document.createElement("div");
+                confirm_msg.style.color = "white";
+                const form =
+                    document.getElementById("login-form").parentElement;
+                const user = TEST_USERS[email];
+
+                if (user && user.password === password) {
+                    console.log(`login successful\nuser: ${email}`);
+                    window.localStorage.setItem("session_email", email);
+                    confirm_msg.textContent = "Login successful";
+                    confirm_msg.style.backgroundColor = "green";
+                    form.appendChild(confirm_msg);
+                    setTimeout(() => {
+                        confirm_msg.remove();
+                    }, 3000);
+                } else {
+                    console.log("login failed");
+                    confirm_msg.textContent = "Login failed";
+                    confirm_msg.style.backgroundColor = "red";
+                    form.appendChild(confirm_msg);
+                    setTimeout(() => {
+                        confirm_msg.remove();
+                    }, 3000);
+                    // FIXME: better visual login failure + accessibility
+                    toggleForm("login-form");
+                }
+                return false;
+            }
+
+            function toggleForm(form_id) {
+                const forms = document.querySelectorAll("form");
+                forms.forEach((form) => {
+                    const inputs = form.querySelectorAll("input");
+                    inputs.forEach((input) => {
+                        // clear editable fields
+                        if (
+                            input.type !== "submit" &&
+                            input.type !== "button"
+                        ) {
+                            input.value = "";
+                        }
+                    });
+                    form.style.display = "none";
+                });
+                // using -1 to keep all forms hidden for account-creation success
+                if (form_id !== -1) {
+                    const target = document.getElementById(form_id);
+                    if (target) target.style.display = "block";
+                }
+            }
+
+            // Allowing users who've received an invite to make password to log
+            // in after the fact, email associated to account is the one linked to
+            // the invite code received from an admin user.
+            function validateInvite(event) {
+                if (event) event.preventDefault();
+
+                const code = document.getElementById("invite-code").value;
+                const recipient = TEST_INVITATIONS.get(code);
+                if (recipient) {
+                    window.localStorage.setItem("session_email", recipient);
+                    // making the account email visible in the set password form
+                    const email_label =
+                        document.getElementById("invitee-email");
+                    email_label.innerText = `Email: ${recipient}`;
+                    toggleForm("create-password-form");
+                } else {
+                    toggleForm("accept-invite-form");
+                }
+                return false;
+            }
+
+            // Accepting user types 'user' and 'admin'
+            // FIXME: prevent existing account overwrite
+            function validateNewAccount(event, user_type) {
+                if (event) event.preventDefault();
+
+                const pw_pattern = /^(?=.*[a-zA-Z])(?=.*\d).{6,}$/;
+                if (user_type === "user") {
+                    // getting details from browser and the create-password form field
+                    const email = window.localStorage.getItem("session_email");
+                    const form =
+                        document.getElementById("new-password").parentElement;
+                    const password =
+                        document.getElementById("new-password").value;
+                    const isValid = pw_pattern.test(password);
+                    if (isValid) {
+                        TEST_USERS[email] = {
+                            password: password,
+                            type: "user",
+                        };
+                        const confirm_msg = document.createElement("div");
+                        confirm_msg.textContent =
+                            "Account creation successful, you will be redirected to log in within 5 seconds.";
+                        confirm_msg.style.color = "white";
+                        confirm_msg.style.backgroundColor = "green";
+                        form.appendChild(confirm_msg);
+                        setTimeout(() => {
+                            // go to log in after 5 sec
+                            toggleForm("login-form");
+                            confirm_msg.remove();
+                        }, 5000);
+                    } else {
+                        // FIXME: notify that password isn't viable, same for admin creation
+                        toggleForm("create-password-form");
+                    }
+                }
+                if (user_type === "admin") {
+                    // admin account details coming from the create admin account form
+                    const email = document.getElementById("admin-email").value;
+                    const password =
+                        document.getElementById("admin-password").value;
+                    const isValid = pw_pattern.test(password);
+                    if (isValid) {
+                        TEST_USERS[email] = {
+                            password: password,
+                            type: "admin",
+                        };
+                        const confirm_msg = document.createElement("div");
+                        confirm_msg.textContent =
+                            "Account creation successful, you will be redirected to log in within 5 seconds.";
+                        confirm_msg.style.color = "white";
+                        confirm_msg.style.backgroundColor = "green";
+                        const form = document.getElementById(
+                            "create-admin-account-form",
+                        );
+                        form.appendChild(confirm_msg);
+                        setTimeout(() => {
+                            toggleForm("login-form");
+                            confirm_msg.remove();
+                        }, 5000);
+                    } else {
+                        toggleForm("create-admin-account-form");
+                    }
+                }
+                return false;
+            }
+        </script>
+    </head>
+    <body>
+        <header>WIP</header>
+        <main>
+            <div style="display: flex">
+                <button onclick="toggleForm('accept-invite-form')">
+                    Accept an invite
+                </button>
+                <button onclick="toggleForm('login-form')">Log in</button>
+                Or:
+                <button
+                    type="button"
+                    onclick="toggleForm('create-admin-account-form')"
+                >
+                    Create Administrative Account
+                </button>
+            </div>
+
+            <!-- ###################### INVITATIONS FORM ###################### -->
+            <form
+                id="accept-invite-form"
+                style="display: none"
+                onsubmit="return validateInvite(event);"
+            >
+                <div>
+                    <p>Paste your invitation code:</p>
+                    <span>
+                        <input required type="text" id="invite-code" />
+                        <input type="submit" value="accept invite" />
+                    </span>
+                </div>
+            </form>
+            <form
+                id="create-password-form"
+                style="display: none"
+                onsubmit="return validateNewAccount(event, 'user');"
+            >
+                <div>
+                    <p id="invitee-email" style="color: #ccc"></p>
+                    <p>Enter a new password:</p>
+                    <p>
+                        Minimum 6 characters<br />At least one letter<br />At
+                        least one number
+                    </p>
+                    <span>
+                        <input required type="password" id="new-password" />
+                        <input type="submit" value="submit" />
+                    </span>
+                </div>
+            </form>
+
+            <!-- ###################### STANDARD LOGIN FORM ###################### -->
+            <form
+                id="login-form"
+                style="display: none"
+                onsubmit="return validateLogin(event);"
+            >
+                <div>
+                    <label for="email">Email</label>
+                    <input required type="text" id="email" />
+                </div>
+                <div>
+                    <label for="password">Password</label>
+                    <input required type="password" id="password" />
+                </div>
+                <div>
+                    <input type="submit" value="submit" />
+                </div>
+            </form>
+
+            <!-- ###################### CREATE ACCOUNT FORM ###################### -->
+            <form
+                id="create-admin-account-form"
+                style="display: none"
+                onsubmit="return validateNewAccount(event, 'admin');"
+            >
+                <div>
+                    <label for="admin-email">Email</label>
+                    <input required type="text" id="admin-email" />
+                </div>
+                <div>
+                    <label for="admin-password">Create a Password</label>
+                    <input required type="password" id="admin-password" />
+                </div>
+                <div>
+                    <input type="submit" value="submit" />
+                </div>
+            </form>
+        </main>
+        <footer></footer>
+    </body>
+</html>
