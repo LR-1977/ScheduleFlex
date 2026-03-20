@@ -8,7 +8,6 @@ const port = 3000;
 
 // Password functions
 
-
 // Hashes the password to be stored in the database
 function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString("hex");
@@ -17,10 +16,11 @@ function hashPassword(password) {
     return { salt, hash: derivedKey };
 }
 
-
 // Verifies the password.
 function verifyPassword(password, storedHash, storedSalt) {
-    const derivedKey = crypto.scryptSync(password, storedSalt, 64).toString("hex");
+    const derivedKey = crypto
+        .scryptSync(password, storedSalt, 64)
+        .toString("hex");
     return derivedKey === storedHash;
 }
 
@@ -35,25 +35,27 @@ const INVITATIONS = new Map([
 ]);
 
 // Middleware
-app.use(express.json()); 
-app.use(express.static("public")); 
-app.use(session({
-    secret: "scheduleflex-super-secret-key", // remove for actual deployment
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false } 
-}));
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public"))); // serve files from public
+app.use(
+    session({
+        secret: "scheduleflex-super-secret-key", // remove for actual deployment
+        resave: false,
+        saveUninitialized: false,
+        cookie: { secure: false },
+    }),
+);
 
 // HTML Routing
 // Homepage
 app.get("/", (req, res) => {
     if (req.session.user) return res.redirect("/calendar");
-    res.sendFile(path.join(__dirname, "../../views", "login.html"));
+    res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 app.get("/calendar", (req, res) => {
     if (!req.session.user) return res.redirect("/"); // Protect the calendar
-    res.sendFile(path.join(__dirname, "../../views", "calendar.html"));
+    res.sendFile(path.join(__dirname, "public", "calendar.html"));
 });
 
 // API Routing
@@ -78,53 +80,62 @@ app.post("/api/login", (req, res) => {
         req.session.user = { email: email, role: user.type };
         res.json({ success: true, message: "Login successful" });
     } else {
-        res.status(401).json({ success: false, message: "Invalid credentials" });
+        res.status(401).json({
+            success: false,
+            message: "Invalid credentials",
+        });
     }
 });
 
 // Admin Account Creation
 app.post("/api/admin/create", (req, res) => {
     const { email, password, secretPhrase } = req.body;
-    
+
     // Check the secret phrase first.
     const EXPECTED_SECRET = "JordanWasHere";
     if (secretPhrase !== EXPECTED_SECRET) {
-        return res.status(403).json({ success: false, message: "Invalid admin passphrase." });
+        return res
+            .status(403)
+            .json({ success: false, message: "Invalid admin passphrase." });
     }
-    
+
     // Checks if the account exists already.
     if (USERS[email]) {
-        return res.status(400).json({ success: false, message: "Account already exists." });
+        return res
+            .status(400)
+            .json({ success: false, message: "Account already exists." });
     }
-    
+
     // Create the new admin account and hash the password.
     const secureAuth = hashPassword(password);
-    USERS[email] = { 
-        hash: secureAuth.hash, 
-        salt: secureAuth.salt, 
-        type: "admin" 
+    USERS[email] = {
+        hash: secureAuth.hash,
+        salt: secureAuth.salt,
+        type: "admin",
     };
-    
+
     res.json({ success: true, message: "Admin account created." });
 });
-
 
 // Validate an invite code invitation.
 app.post("/api/invite/validate", (req, res) => {
     const { code } = req.body;
-    
+
     // Check our temporary server-side map.
     const email = INVITATIONS.get(code);
 
     if (email) {
         // Securely remember this user is in the middle of accepting an invite
-        req.session.pendingInviteEmail = email; 
+        req.session.pendingInviteEmail = email;
         req.session.pendingInviteCode = code;
-        
+
         // Send the email back so the frontend can display it
         res.json({ success: true, email: email });
     } else {
-        res.status(400).json({ success: false, message: "Invalid or expired invitation code." });
+        res.status(400).json({
+            success: false,
+            message: "Invalid or expired invitation code.",
+        });
     }
 });
 
@@ -137,20 +148,24 @@ app.post("/api/invite/accept", (req, res) => {
     const code = req.session.pendingInviteCode;
 
     if (!email || !code) {
-        return res.status(400).json({ success: false, message: "Session expired." });
+        return res
+            .status(400)
+            .json({ success: false, message: "Session expired." });
     }
     if (USERS[email]) {
-        return res.status(400).json({ success: false, message: "Account already exists." });
+        return res
+            .status(400)
+            .json({ success: false, message: "Account already exists." });
     }
 
     // Create the new user account and hash the password.
     const secureAuth = hashPassword(password);
-    USERS[email] = { 
-        hash: secureAuth.hash, 
-        salt: secureAuth.salt, 
-        type: "user" 
+    USERS[email] = {
+        hash: secureAuth.hash,
+        salt: secureAuth.salt,
+        type: "user",
     };
-    
+
     INVITATIONS.delete(code);
     delete req.session.pendingInviteEmail;
     delete req.session.pendingInviteCode;
@@ -163,9 +178,11 @@ app.post("/api/logout", (req, res) => {
     // Destroy the session securely
     req.session.destroy((err) => {
         if (err) {
-            return res.status(500).json({ success: false, message: "Could not log out." });
+            return res
+                .status(500)
+                .json({ success: false, message: "Could not log out." });
         }
-        res.clearCookie('connect.sid'); // Clear the default Express session cookie
+        res.clearCookie("connect.sid"); // Clear the default Express session cookie
         res.json({ success: true });
     });
 });

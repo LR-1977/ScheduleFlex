@@ -1,0 +1,114 @@
+main {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    justify-content: center;
+    justify-self: center;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 520px;
+    padding: 2rem;
+}
+
+h1 {
+    text-align: center;
+    margin: 1rem 0 2rem 0;
+    font-size: 1.75rem;
+}
+
+.auth-container {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.auth-container span {
+    display: block;
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+form {
+    margin: 1rem 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+form div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+form label {
+    margin-top: 1rem;
+}
+
+input[type="text"],
+input[type="password"] {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+input[type="submit"],
+button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--navy);
+    color: white;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+input[type="submit"] {
+    margin-top: 0.75rem;
+    width: fit-content;
+    justify-self: center;
+}
+
+button[id="btn-admin"] {
+    background-color: var(--accent);
+}
+
+#admin-btn-container {
+    text-align: center;
+    color: var(--text-main);
+}
+
+button:hover,
+input[type="submit"]:hover {
+    background-color: var(--navy-hover);
+}
+
+button[id="btn-admin"]:hover {
+    background-color: var(--accent-hover);
+}
+
+#auth-msg {
+    text-align: center;
+    font-size: 0.9rem;
+    min-height: 1.2rem;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-top: 1rem;
+}
