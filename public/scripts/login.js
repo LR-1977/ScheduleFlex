@@ -45,7 +45,7 @@ function showStatusMessage(message, status, time_ms) {
     messageBox.style.backgroundColor = status === "success" ? "green" : "red";
     setTimeout(() => {
         messageBox.textContent = "";
-        messageBox.backgroundColor = "transparent";
+        messageBox.style.backgroundColor = "transparent";
     }, time_ms);
 }
 
@@ -55,17 +55,19 @@ async function validateLogin(event) {
     const password = el("password").value.trim();
 
     try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+        const response = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
         });
 
         const data = await response.json();
 
         if (response.ok) {
             showStatusMessage("Login Successful", "success", 1000);
-            setTimeout(() => { window.location.href = '/calendar'; }, 1000);
+            setTimeout(() => {
+                window.location.href = "/calendar";
+            }, 1000);
         } else {
             showStatusMessage(data.message || "Login Failed", "fail", 3000);
             showForm("login-form");
@@ -83,10 +85,10 @@ async function validateInvite(event) {
     const code = el("invite-code").value.trim();
 
     try {
-        const response = await fetch('/api/invite/validate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code })
+        const response = await fetch("/api/invite/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code }),
         });
 
         const data = await response.json();
@@ -104,7 +106,6 @@ async function validateInvite(event) {
     }
 }
 
-
 // Create an account based on an invite code which was given to the user.
 async function createInvitedAccount(event) {
     event.preventDefault();
@@ -116,33 +117,36 @@ async function createInvitedAccount(event) {
         showStatusMessage(
             "Password must be at least 6 characters, 1 letter, 1 number",
             "fail",
-            3000
+            3000,
         );
         return showForm("create-password-form");
     }
 
     try {
         // Send the password to the server.
-        const response = await fetch('/api/invite/accept', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password }) 
+        const response = await fetch("/api/invite/accept", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password }),
         });
 
         const data = await response.json();
 
         // If the account was successfully created, redirect to login.
         if (response.ok) {
-            showStatusMessage("Account created. Redirecting to log in.", "success", 2500);
+            showStatusMessage(
+                "Account created. Redirecting to log in.",
+                "success",
+                2500,
+            );
             setTimeout(() => {
                 clearInputs(el("create-password-form"));
                 showForm("login-form");
             }, 2500);
         } else {
-
             // If the account could not be created, show the error message.
             showStatusMessage(data.message, "fail", 3000);
-            
+
             // If the session expired, kick them back to the code input form
             if (response.status === 400 && data.message.includes("expired")) {
                 setTimeout(() => showForm("accept-invite-form"), 2000);
@@ -153,7 +157,6 @@ async function createInvitedAccount(event) {
     }
 }
 
-
 // Admin account creation
 async function createAdminAccount(event) {
     event.preventDefault();
@@ -163,21 +166,29 @@ async function createAdminAccount(event) {
     const PW_PATTERN = /^(?=.*[a-zA-Z])(?=.*\d).{6,}$/;
 
     if (!PW_PATTERN.test(password)) {
-        showStatusMessage("Password must be at least 6 characters, 1 letter, 1 number", "fail", 3000);
+        showStatusMessage(
+            "Password must be at least 6 characters, 1 letter, 1 number",
+            "fail",
+            3000,
+        );
         return showForm("create-admin-account-form");
     }
 
     try {
-        const response = await fetch('/api/admin/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, secretPhrase }) // Include it in the payload
+        const response = await fetch("/api/admin/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, secretPhrase }), // Include it in the payload
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            showStatusMessage("Account created. Redirecting to log in.", "success", 2500);
+            showStatusMessage(
+                "Account created. Redirecting to log in.",
+                "success",
+                2500,
+            );
             setTimeout(() => {
                 clearInputs(el("create-admin-account-form"));
                 showForm("login-form");
