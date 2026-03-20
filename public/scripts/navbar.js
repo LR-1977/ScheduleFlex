@@ -64,15 +64,6 @@ function toggleTheme() {
     html.setAttribute("data-theme", newTheme);
 }
 
-//Theme load
-function loadTheme() {
-    //if we use multiple cookies this code must change
-    let cookie = document.cookie;
-    let mode = cookie.slice(6);
-    if (mode == "dark") {
-        toggleTheme();
-    }
-}
 
 // TEMP FUNC: Switch between admin and employee for now
 function switchRoleTest() {
