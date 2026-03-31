@@ -30,7 +30,7 @@ async function renderNavbar() {
             li.innerHTML = `<a href="${link.href}">${link.name}</a>`;
             navLinks.appendChild(li);
         });
-
+        /*
         const themeLi = document.createElement("li");
         themeLi.innerHTML = `<button class="nav-link-style" onclick="toggleTheme()">Theme</button>`;
         navLinks.appendChild(themeLi);
@@ -38,6 +38,7 @@ async function renderNavbar() {
         const logoutLi = document.createElement("li");
         logoutLi.innerHTML = `<button class="nav-link-style" onclick="handleLogout()">Log Out</button>`;
         navLinks.appendChild(logoutLi);
+        */
     } catch (error) {
         console.error("Failed to load nav", error);
     }
@@ -53,6 +54,10 @@ async function handleLogout() {
         console.error("Logout failed", error);
     }
 }
+
+
+
+
 
 // Theme toggle
 function toggleTheme() {
