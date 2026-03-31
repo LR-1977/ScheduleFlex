@@ -147,6 +147,11 @@ function sidebarHeight() {
         sidebar.style.top = ""+(navLinks.offsetHeight+tempControls.offsetHeight)+"px";
         //sidebar.style.top = ""+navLinks.offsetHeight+"px";
     }
+
+    const dashboard = document.getElementById("dashboard");
+    if (sidebar && dashboard) {
+        sidebar.style.height = ""+(dashboard.offsetHeight)+"px";
+    }
 }
 
 
