@@ -1,3 +1,6 @@
+var workingEmployees;
+var shiftIndex = 0;
+
 async function renderSidebar() {
     const sideLinks = document.getElementById("side-links");
     const navButtons = document.getElementById("side-buttons");
@@ -23,7 +26,7 @@ async function renderSidebar() {
             //second item is the start time of shift for that manager
             //third item is the end time of shift for that manager
             //all following items are a string of name and times for an employee working that day
-        const workingEmployees = [["April 1st", "9:00", "17:00", "Alice 9:00-17:00", "Bob 10:00-18:00"],["April 2nd", "10:00", "18:00", "Charlie 10:00-18:00", "David 9:00-17:00"]];
+        workingEmployees = [["April 1st", "9:00", "17:00", "Alice 9:00-17:00", "Bob 10:00-18:00"],["April 2nd", "10:00", "18:00", "Charlie 10:00-18:00", "David 9:00-17:00", "Eve 11:00-19:00"]];
 
         //TODO: replace hard coded reschedule requests with db call when db created
         //Assuming the db presents a list of:
@@ -38,11 +41,7 @@ async function renderSidebar() {
         // Depending on when the user is an administrator or not, we show different links.
         if (role === "admin") {
             
-            workingEmployees.forEach((workingEmployee) => {
-                const li = document.createElement("li");
-                li.innerHTML = getDisplayedShift(workingEmployee);
-                sideLinks.appendChild(li);
-            });
+            getDisplayedShift(workingEmployees[shiftIndex]);   
             getReschedule(rescheduleRequests[0]);
         } else {
             //Remove sidebar if not admin
@@ -87,12 +86,18 @@ async function renderSidebar() {
 }
 
 function nextShift() {
-    //TODO get next data in sequence for manager shifts and who works
-    return;
+    shiftIndex+=1;
+    if (shiftIndex >= workingEmployees.length){
+        shiftIndex = 0;
+    }
+    getDisplayedShift(workingEmployees[shiftIndex]);
 }
 function prevShift() {
-    //TODO get next data in sequence for manager shifts and who works
-    return;
+    shiftIndex-=1;
+    if (shiftIndex < 0){
+        shiftIndex = workingEmployees.length-1;
+    }
+    getDisplayedShift(workingEmployees[shiftIndex]);
 }
 function getRescheduleRequests() {
     //TODO get reschedule requests from db and return in format used in renderSidebar function
@@ -125,6 +130,9 @@ function skipRequest() {
 
 
 function getDisplayedShift(shift) {
+    const li = document.createElement("li");
+    
+    console.log(shift);
     toReturn =
         "Date: " + shift[0] + "<br>" +
         "Your hours:<br>" + 
@@ -133,7 +141,8 @@ function getDisplayedShift(shift) {
     for(i=3;i<shift.length;i++){
         toReturn = toReturn + "    "+shift[i]+"<br>";
     }
-    return toReturn;
+    li.innerHTML = toReturn;
+    document.getElementById("side-links").replaceChildren(li);
 }
 
 function sidebarHeight() {
@@ -151,6 +160,7 @@ function sidebarHeight() {
     const dashboard = document.getElementById("dashboard");
     if (sidebar && dashboard) {
         sidebar.style.height = ""+(dashboard.offsetHeight)+"px";
+
     }
 }
 
