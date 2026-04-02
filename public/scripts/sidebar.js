@@ -17,8 +17,8 @@ async function renderSidebar() {
         }
 
         const sessionData = await response.json();
-        //const role = sessionData.user.role;
-        const role = "admin";
+        const role = sessionData.user.role;
+        //const role = "admin";
 
         //TODO: replace hard coded side links with db call when db created
         //const workingEmployees = await getDataFromDB(sessionData.user.email);
