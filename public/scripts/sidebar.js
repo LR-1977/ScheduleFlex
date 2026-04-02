@@ -17,8 +17,9 @@ async function renderSidebar() {
         }
 
         const sessionData = await response.json();
-        const role = sessionData.user.role;
-        
+        //const role = sessionData.user.role;
+        const role = "admin";
+
         //TODO: replace hard coded side links with db call when db created
         //const workingEmployees = await getDataFromDB(sessionData.user.email);
         //Assuming the db presents a list of:
@@ -41,42 +42,67 @@ async function renderSidebar() {
         // Depending on when the user is an administrator or not, we show different links.
         if (role === "admin") {
             
-            getDisplayedShift(workingEmployees[shiftIndex]);   
+            getManagerDisplayedShift(workingEmployees[shiftIndex]);   
             getReschedule(rescheduleRequests[0]);
+
+            // here is buttons
+            const themeLi = document.createElement("li");
+            themeLi.innerHTML = `<button class="nav-link-style" onclick="nextManagerShift()">Next Shift</button>`;
+            navButtons.appendChild(themeLi);
+
+            const logoutLi = document.createElement("li");
+            logoutLi.innerHTML = `<button class="nav-link-style" onclick="prevManagerShift()">Prev Shift</button>`;
+            navButtons.appendChild(logoutLi);
+        
+            const approveLi = document.createElement("li");
+            approveLi.innerHTML = `<button class="nav-link-style" onclick="approveRequest()">Approve</button>`;
+            rescheduleButtons.appendChild(approveLi);
+
+            const denyLi = document.createElement("li");
+            denyLi.innerHTML = `<button class="nav-link-style" onclick="denyRequest()">Deny</button>`;
+            rescheduleButtons.appendChild(denyLi);
+
+            const skipLi = document.createElement("li");
+            skipLi.innerHTML = `<button class="nav-link-style" onclick="skipRequest()">Skip</button>`;
+            rescheduleButtons.appendChild(skipLi);
+
+            //TODO: make the number of remaining requests better
+            const remainingLi = document.createElement("div");
+            remainingLi.style.textAlign = "left";
+            remainingLi.innerHTML = `Remaining Requests: ${rescheduleRequests[0][4]}`;
+            rescheduleButtons.appendChild(remainingLi);
+
+
         } else {
-            //Remove sidebar if not admin
-            document.getElementById("sidebar").style.display = "none";
-            document.getElementById("dashboard").style.marginLeft = "0";
-            
+            //user is in employee role
+            const switchTitle = document.createElement("li");
+            switchTitle.innerHTML = `Swap Shift Form:`;
+            switchTitle.style.fontWeight = "bold";
+            switchTitle.style.fontSize = "18px";
+            sideLinks.appendChild(switchTitle);
+
+            const submitReschedule = document.createElement("li");
+            submitReschedule.innerHTML = `<button class="nav-link-style" id="submit-button">Submit</button>`;
+            navButtons.appendChild(submitReschedule);
+            //getRescheduleForm() must be called after the submit button is created so that the event listener can be added to it.
+            getRescheduleForm();
+
+            const dayOffTitle = document.createElement("li");
+            dayOffTitle.innerHTML = `Request Day Off Form:`;
+            dayOffTitle.style.fontWeight = "bold";
+            dayOffTitle.style.fontSize = "18px";
+            rescheduleRequest.appendChild(dayOffTitle);
+
+            const submitDayOff = document.createElement("li");
+            submitDayOff.innerHTML = `<button class="nav-link-style" id="day-off-button">Submit</button>`;
+            rescheduleButtons.appendChild(submitDayOff);
+            //getDayOffForm() must be called after the submit button is created so that the event listener can be added to it.
+            getDayOffForm();
+
+            document.getElementById("side-title").innerText = "Dedicated Drivers Desired Day Dashboard";
         }
 
-        ///* here is buttons
-        const themeLi = document.createElement("li");
-        themeLi.innerHTML = `<button class="nav-link-style" onclick="nextShift()">Next Shift</button>`;
-        navButtons.appendChild(themeLi);
-
-        const logoutLi = document.createElement("li");
-        logoutLi.innerHTML = `<button class="nav-link-style" onclick="prevShift()">Prev Shift</button>`;
-        navButtons.appendChild(logoutLi);
-     
-        const approveLi = document.createElement("li");
-        approveLi.innerHTML = `<button class="nav-link-style" onclick="approveRequest()">Approve</button>`;
-        rescheduleButtons.appendChild(approveLi);
-
-        const denyLi = document.createElement("li");
-        denyLi.innerHTML = `<button class="nav-link-style" onclick="denyRequest()">Deny</button>`;
-        rescheduleButtons.appendChild(denyLi);
-
-        const skipLi = document.createElement("li");
-        skipLi.innerHTML = `<button class="nav-link-style" onclick="skipRequest()">Skip</button>`;
-        rescheduleButtons.appendChild(skipLi);
-
-        //TODO: make the number of remaining requests better
-        const remainingLi = document.createElement("div");
-        remainingLi.style.textAlign = "left";
-        remainingLi.innerHTML = `Remaining Requests: ${rescheduleRequests[0][4]}`;
-        rescheduleButtons.appendChild(remainingLi);
-        
+                
     // here is for the sidebar height
     sidebarHeight();
 
@@ -85,25 +111,106 @@ async function renderSidebar() {
     }
 }
 
-function nextShift() {
+function submitSuccessful() {
+    alert("Request Submitted Successfully!");
+}
+
+function getDayOffForm() {
+    const sideLinks = document.getElementById("reschedule-request");
+    const li = document.createElement("li");
+    li.innerHTML = `<form id="day-off-form">` +
+                    `<label for="date1">Your Day Off Date:</label><br>` +
+                    `<input type="date" id="1date" name="date1"><br>` +
+                    `<label for="shift1">Your Shift Start Time:</label><br>` +
+                    `<input type="text" id="1shift" name="shift1" size="15"><br>` +
+                    `<label for="shift2">Your Shift End Time:</label><br>` +
+                    `<input type="text" id="2shift" name="shift2" size="15"><br>` +
+                    `<label for="reason">Reason for Day Off:</label><br>` +
+                    `<textarea id="reason" name="reason" rows="4" cols="16"></textarea><br>` +  
+                    `</form>`;
+    sideLinks.appendChild(li);
+    submitButton = document.getElementById("day-off-button");
+    submitButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        const date1 = document.getElementById("1date").value;
+        const shift1 = document.getElementById("1shift").value;        
+        const shift2 = document.getElementById("2shift").value;
+        const reason = document.getElementById("reason").value;
+        //TODO submit this reschedule request to the db for the manager to approve/deny
+        console.log(`Reschedule Request Submitted: ${date1} ${shift1}-${shift2} -> ${reason}`); 
+        
+        //if (await DBResponse== allgood) {
+            submitSuccessful();
+        //}
+        
+        
+    });
+}
+
+function getRescheduleForm() {
+    const sideLinks = document.getElementById("side-links");
+    const li = document.createElement("li");
+    li.innerHTML = `<form id="reschedule-form">` +
+                    `<label for="date1">Your Shift Date:</label><br>` +
+                    `<input type="date" id="date1" name="date1"><br>` +   
+                    `<label for="shift1">Your Shift Start Time:</label><br>` +
+                    `<input type="text" id="shift1" name="shift1" size="15"><br>` +
+                    `<label for="shift2">Your Shift End Time:</label><br>` +
+                    `<input type="text" id="shift2" name="shift2" size="15"><br>` +
+                    `<label for="date2">Requested Shift Date:</label><br>` +
+                    `<input type="date" id="date2" name="date2"><br>` +
+                    `<label for="shift3">Requested Shift Start Time:</label><br>` +
+                    `<input type="text" id="shift3" name="shift3" size="15"><br>` +
+                    `<label for="shift4">Requested Shift End Time:</label><br>` +
+                    `<input type="text" id="shift4" name="shift4" size="15"><br>` +
+                    `<label for="otherEmp">Other Employee's Name:</label><br>` +
+                    `<input type="text" id="otherEmp" name="otherEmp" size="15"><br>` +
+                    `</form>`;
+    sideLinks.appendChild(li);
+    submitButton = document.getElementById("submit-button");
+    submitButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        const date1 = document.getElementById("date1").value;
+        const shift1 = document.getElementById("shift1").value;        
+        const date2 = document.getElementById("date2").value;
+        const shift2 = document.getElementById("shift2").value;
+        //TODO submit this reschedule request to the db for the manager to approve/deny
+        console.log(`Reschedule Request Submitted: ${date1} ${shift1}-${shift2} -> ${date2}`);
+        //if (await DBResponse== allgood) {
+            submitSuccessful();
+        //}
+    });
+}
+
+
+
+
+
+function nextManagerShift() {
     shiftIndex+=1;
     if (shiftIndex >= workingEmployees.length){
         shiftIndex = 0;
     }
-    getDisplayedShift(workingEmployees[shiftIndex]);
+    getManagerDisplayedShift(workingEmployees[shiftIndex]);
 }
-function prevShift() {
+function prevManagerShift() {
     shiftIndex-=1;
     if (shiftIndex < 0){
         shiftIndex = workingEmployees.length-1;
     }
-    getDisplayedShift(workingEmployees[shiftIndex]);
+    getManagerDisplayedShift(workingEmployees[shiftIndex]);
 }
 function getRescheduleRequests() {
     //TODO get reschedule requests from db and return in format used in renderSidebar function
 }
 
 function getReschedule(request) {
+    const dayOffTitle = document.createElement("li");
+    dayOffTitle.innerHTML = `Shift Change Requests:`;
+    dayOffTitle.style.fontWeight = "bold";
+    dayOffTitle.style.fontSize = "18px";
+    document.getElementById("reschedule-request").replaceChildren(dayOffTitle);
+
     toDisplay ="1st Shift:<br> " +
             request[0] + "<br>" +
             request[1] + "<br>" +
@@ -129,7 +236,14 @@ function skipRequest() {
 }
 
 
-function getDisplayedShift(shift) {
+function getManagerDisplayedShift(shift) {
+    const manifestTitle = document.createElement("li");
+    manifestTitle.innerHTML = `Shift Manifest:`;
+    manifestTitle.style.fontWeight = "bold";
+    manifestTitle.style.fontSize = "18px";
+    document.getElementById("side-links").replaceChildren(manifestTitle);
+    
+    
     const li = document.createElement("li");
     
     console.log(shift);
@@ -142,13 +256,14 @@ function getDisplayedShift(shift) {
         toReturn = toReturn + "    "+shift[i]+"<br>";
     }
     li.innerHTML = toReturn;
-    document.getElementById("side-links").replaceChildren(li);
+    document.getElementById("side-links").appendChild(li);
 }
 
 function sidebarHeight() {
     /*WHEN REMOVING THE TEMP SWITCH ROLE BUTTON IN THIS FUNCTION:
         remove the line initializing tempControls and change the active line of code in the if statement
-    */
+    */ 
+    
     const sidebar = document.getElementById("sidebar");
     const navLinks = document.getElementById("main-header");
     const tempControls = document.getElementById("temp-controls");
@@ -156,11 +271,9 @@ function sidebarHeight() {
         sidebar.style.top = ""+(navLinks.offsetHeight+tempControls.offsetHeight)+"px";
         //sidebar.style.top = ""+navLinks.offsetHeight+"px";
     }
-
     const dashboard = document.getElementById("dashboard");
     if (sidebar && dashboard) {
-        sidebar.style.height = ""+(dashboard.offsetHeight)+"px";
-
+        sidebar.style.minHeight = ""+(dashboard.offsetHeight)+"px";
     }
 }
 

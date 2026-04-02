@@ -184,7 +184,8 @@ button {
     top: 0;
     bottom:0;
     width: 150px;
-    
+    height: fit-content;
+    overflow: hidden;
 
     background-color: var(--navy);
     color: white;
