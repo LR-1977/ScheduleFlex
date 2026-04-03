@@ -3,7 +3,7 @@ async function renderNavbar() {
     const navLinks = document.getElementById("nav-links");
     if (!navLinks) return;
     navLinks.innerHTML = "";
-
+    
     try {
         const response = await fetch("/api/session");
         if (!response.ok) {
@@ -38,6 +38,7 @@ async function renderNavbar() {
         const logoutLi = document.createElement("li");
         logoutLi.innerHTML = `<button class="nav-link-style" onclick="handleLogout()">Log Out</button>`;
         navLinks.appendChild(logoutLi);
+
     } catch (error) {
         console.error("Failed to load nav", error);
     }
@@ -59,8 +60,10 @@ function toggleTheme() {
     const html = document.documentElement;
     const currentTheme = html.getAttribute("data-theme");
     const newTheme = currentTheme === "light" ? "dark" : "light";
+    document.cookie = `theme = ${newTheme}`;
     html.setAttribute("data-theme", newTheme);
 }
+
 
 // TEMP FUNC: Switch between admin and employee for now
 function switchRoleTest() {
@@ -69,4 +72,5 @@ function switchRoleTest() {
     renderNavbar();
 }
 
+//document.addEventListener('DOMContentLoaded', loadTheme);
 document.addEventListener("DOMContentLoaded", renderNavbar);
