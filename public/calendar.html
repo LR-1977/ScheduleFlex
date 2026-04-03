@@ -14,7 +14,7 @@
         </script>
     </head>
     <body>
-        <header class="main-header">
+        <header id = "main-header" class="main-header">
             <!-- Logo -->
             <div class="logo">Schedule<span>Flex</span></div>
             <!-- Navigation Bar -->
@@ -24,13 +24,23 @@
         </header>
 
         <!-- TEMP: Role Switch for different Nav Links -->
-        <div class="header-controls">
+        <div id = "temp-controls" class="header-controls">
             <button class="role-switcher" onclick="switchRoleTest()">
                 Switch Role
             </button>
         </div>
+        
+        <div id="sidebar" class="sideBar" >
+            <div id ="side-title">Miraculous Manager's Manpower Manifest</div>
+            <nav>
+                <ul id="side-links" class="side-list"></ul>
+                <ul id="side-buttons" class="side-buttons"></ul>
+                <ul id="reschedule-request" class="side-list"></ul>
+                <ul id="reschedule-buttons" class="side-buttons"></ul>
+            </nav>
+        </div>
         <!-- Calendar -->
-        <main class="dashboard">
+        <main id="dashboard" class="dashboard">
             <section class="calendar-container">
                 <div class="calendar-header">
                     <h2 id="month-display">Month Year</h2>
@@ -51,5 +61,6 @@
         <!-- Scripts -->
         <script src="/scripts/navbar.js"></script>
         <script src="/scripts/calendar.js"></script>
+        <script src="/scripts/sidebar.js"></script>
     </body>
 </html>
