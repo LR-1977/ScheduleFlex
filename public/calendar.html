@@ -5,6 +5,13 @@
         <meta name="viewport" content="width=device-width, inital-scale=1.0" />
         <title>ScheduleFlex | Calendar</title>
         <link rel="stylesheet" href="/styles/main.css" />
+        <script>
+            let cookie = document.cookie;
+            let mode = cookie.slice(6);
+            if (mode == "dark") {
+                document.documentElement.setAttribute('data-theme', "dark");
+            }
+        </script>
     </head>
     <body>
         <header id = "main-header" class="main-header">

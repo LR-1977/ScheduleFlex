@@ -63,11 +63,75 @@ function renderCalendar() {
 
         grid.appendChild(cell);
     }
+    //Temporary code to populate test items
+    let items = [['March 2026',5,'4am','1pm','test',false],['March 2026',8,'7pm','2am','',true],['March 2026', 31, '10pm','8am','',true]];
+    populateCalendar(items);
 }
 
 function changeMonth(offset) {
     currentDisplayDate.setMonth(currentDisplayDate.getMonth() + offset);
     renderCalendar();
+}
+
+function populateCalendar(items) {
+    
+    //items is an array of arrays, with the inner arrays containing: 
+    //['month year', day of month, start time, stop time, text description, overnight]
+    //  month year: string how it appears on webpage
+    //  day of month: int of day of month to modify
+    //  start time: string to display for start time
+    //  stop time: string to display for stop time
+    //  text description: text to display under time
+    //  overnight: boolean, true for over midnight shifts false otherwise
+    let currentDisplayedMonth = document.getElementById('month-display').childNodes[0].textContent;
+
+    for (let item of items) {
+        if (item[0] == currentDisplayedMonth) {
+            let toDisplay = `<span class = 'shift'>`+item[2];
+            if (!item[5]) {
+                toDisplay += "-"+item[3];
+            } else {
+                toDisplay += "-overnight";
+                let nextDisplay = "<span class = 'shift'>overnight-"+item[3]+"</span>";
+                appendCell(item[1]+1,nextDisplay);
+
+            }
+            if (item[4].length >0) {
+                toDisplay += '\n'+item[4];
+            }
+            toDisplay += "</span>"
+            appendCell(item[1],toDisplay);
+        }
+    }
+
+}
+
+function appendCell(day, text) {
+    let cell = getCell(day);
+    if (cell == null) {
+        return;
+    }
+    cell.innerHTML += text;
+}
+
+function getCell(day) {
+    const grid = document.getElementById('calendar-grid');
+    for (element of grid.childNodes) {
+        if (element.className == 'calendar-day' && element.innerText.startsWith(day)) {
+            return element;
+        }
+    }
+
+}
+//TODO add muted cell changes
+
+function getMutedCell() {
+    const grid = document.getElementById('calendar-grid');
+    for (element of grid.childNodes) {
+        if (element.className == 'calendar-day muted' && element.innerText.startsWith(day)) {
+            return element;
+        }
+    }
 }
 
 document.addEventListener("DOMContentLoaded", renderCalendar);
