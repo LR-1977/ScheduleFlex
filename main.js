@@ -2,10 +2,30 @@ const express = require("express");
 const session = require("express-session");
 const path = require("path");
 const crypto = require("crypto");
-
+const { MongoClient, ObjectId } = require("mongodb");
 const app = express();
 const port = 3000;
 
+const mongoUrl = "mongodb://127.0.0.1:27017/";
+const client = new MongoClient(mongoUrl);
+let db, usersColl, postsColl, sessionsColl;
+
+async function startServer() {
+    try {
+        await client.connect();
+        console.log("Connected to MongoDB");
+
+        db = client.db("schedFlexDB");
+        usersColl = db.collection("userCollection");
+        invitationsColl = db.collection("invitationCollection");
+        eventsColl = db.collection("eventCollection");
+        app.listen(port, () => {
+            console.log(`Server is running on port ${port}`);
+        });
+    } catch (error) {
+        console.error("Error connecting to MongoDB:", error);
+    }
+}
 // Password functions
 
 // Hashes the password to be stored in the database
@@ -24,15 +44,7 @@ function verifyPassword(password, storedHash, storedSalt) {
     return derivedKey === storedHash;
 }
 
-// Server-side hard coded database.
-const USERS = {
-    "user1@gmail.com": { ...hashPassword("12345"), type: "admin" },
-    "user2@gmail.com": { ...hashPassword("pass123"), type: "user" },
-    "user3@gmail.com": { ...hashPassword("password$abc"), type: "user" },
-};
-const INVITATIONS = new Map([
-    ["13a93e8f-48d7-4b47-a61a-f6c967c0fe36", "user4@gmail.com"],
-]);
+
 
 // Middleware
 app.use(express.json());
@@ -71,9 +83,9 @@ app.get("/api/session", (req, res) => {
 
 // Login functionality
 
-app.post("/api/login", (req, res) => {
+app.post("/api/login", async (req, res) => {
     const { email, password } = req.body;
-    const user = USERS[email];
+    const user = await usersColl.findOne({ email });
 
     // Check if the user exists and the password is correct
     if (user && verifyPassword(password, user.hash, user.salt)) {
@@ -88,7 +100,7 @@ app.post("/api/login", (req, res) => {
 });
 
 // Admin Account Creation
-app.post("/api/admin/create", (req, res) => {
+app.post("/api/admin/create", async (req, res) => {
     const { email, password, secretPhrase } = req.body;
 
     // Check the secret phrase first.
@@ -98,9 +110,10 @@ app.post("/api/admin/create", (req, res) => {
             .status(403)
             .json({ success: false, message: "Invalid admin passphrase." });
     }
+    const user = await usersColl.findOne({ email });
 
     // Checks if the account exists already.
-    if (USERS[email]) {
+    if (user != null) {
         return res
             .status(400)
             .json({ success: false, message: "Account already exists." });
@@ -108,39 +121,39 @@ app.post("/api/admin/create", (req, res) => {
 
     // Create the new admin account and hash the password.
     const secureAuth = hashPassword(password);
-    USERS[email] = {
+    let newUser = {
         hash: secureAuth.hash,
         salt: secureAuth.salt,
         type: "admin",
     };
 
+    await usersColl.insertOne({ email, ...newUser });
+
     res.json({ success: true, message: "Admin account created." });
 });
 
 // Validate an invite code invitation.
-app.post("/api/invite/validate", (req, res) => {
+app.post("/api/invite/validate", async (req, res) => {
     const { code } = req.body;
 
     // Check our temporary server-side map.
-    const email = INVITATIONS.get(code);
+    const inviteDoc = await invitationsColl.findOne({ code });
 
-    if (email) {
-        // Securely remember this user is in the middle of accepting an invite
-        req.session.pendingInviteEmail = email;
+    if (inviteDoc) {
+        req.session.pendingInviteEmail = inviteDoc.email;
         req.session.pendingInviteCode = code;
 
-        // Send the email back so the frontend can display it
-        res.json({ success: true, email: email });
+        res.json({ success: true, email: inviteDoc.email });
     } else {
-        res.status(400).json({
-            success: false,
-            message: "Invalid or expired invitation code.",
-        });
+        res.status(400).json({ success: false, message: "Invalid invite code." });
+
     }
+
+    
 });
 
 // Accept an invited account to make a new user.
-app.post("/api/invite/accept", (req, res) => {
+app.post("/api/invite/accept", async (req, res) => {
     const { password } = req.body;
 
     // Check if the user is in the middle of accepting an invite or not.
@@ -152,7 +165,8 @@ app.post("/api/invite/accept", (req, res) => {
             .status(400)
             .json({ success: false, message: "Session expired." });
     }
-    if (USERS[email]) {
+    let currentUser = await usersColl.findOne({ email });
+    if (currentUser) {
         return res
             .status(400)
             .json({ success: false, message: "Account already exists." });
@@ -160,13 +174,17 @@ app.post("/api/invite/accept", (req, res) => {
 
     // Create the new user account and hash the password.
     const secureAuth = hashPassword(password);
-    USERS[email] = {
+    let newUser = {
         hash: secureAuth.hash,
         salt: secureAuth.salt,
         type: "user",
     };
 
-    INVITATIONS.delete(code);
+    await usersColl.insertOne({ email, ...newUser });
+    await invitationsColl.deleteOne({ code });
+
+
+  
     delete req.session.pendingInviteEmail;
     delete req.session.pendingInviteCode;
 
@@ -187,6 +205,9 @@ app.post("/api/logout", (req, res) => {
     });
 });
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+app.get("/api/calendar/events", async (req, res) => {
+    const events = await eventsColl.find({}).toArray();
+    res.json(events);
 });
+
+startServer();

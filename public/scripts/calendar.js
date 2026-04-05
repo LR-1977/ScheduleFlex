@@ -1,7 +1,7 @@
 // Calendar Code
 let currentDisplayDate = new Date();
 
-function renderCalendar() {
+async function renderCalendar() {
     const grid = document.getElementById("calendar-grid");
     const monthDisplay = document.getElementById("month-display");
 
@@ -64,9 +64,20 @@ function renderCalendar() {
         grid.appendChild(cell);
     }
     //Temporary code to populate test items
-    let items = [['March 2026',5,'4am','1pm','test',false],['March 2026',8,'7pm','2am','',true],['March 2026', 31, '10pm','8am','',true]];
-    populateCalendar(items);
+
+    try {
+        const response = await fetch('/api/calendar/events');
+        const eventsData = await response.json();
+        if (eventsData) {
+            populateCalendar(eventsData);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+    
 }
+    
+
 
 function changeMonth(offset) {
     currentDisplayDate.setMonth(currentDisplayDate.getMonth() + offset);
@@ -74,7 +85,7 @@ function changeMonth(offset) {
 }
 
 function populateCalendar(items) {
-    
+
     //items is an array of arrays, with the inner arrays containing: 
     //['month year', day of month, start time, stop time, text description, overnight]
     //  month year: string how it appears on webpage
@@ -86,21 +97,25 @@ function populateCalendar(items) {
     let currentDisplayedMonth = document.getElementById('month-display').childNodes[0].textContent;
 
     for (let item of items) {
-        if (item[0] == currentDisplayedMonth) {
-            let toDisplay = `<span class = 'shift'>`+item[2];
-            if (!item[5]) {
-                toDisplay += "-"+item[3];
+        // arrays are now objects.
+        if (item.monthYear == currentDisplayedMonth) {
+            let toDisplay = `<span class='shift'>` + item.start;
+            
+            if (!item.overnight) {
+                toDisplay += "-" + item.stop;
             } else {
                 toDisplay += "-overnight";
-                let nextDisplay = "<span class = 'shift'>overnight-"+item[3]+"</span>";
-                appendCell(item[1]+1,nextDisplay);
-
+                let nextDisplay = `<span class='shift'>overnight-${item.stop}</span>`;
+                // item.day + 1 handles the next day logic
+                appendCell(item.day + 1, nextDisplay); 
             }
-            if (item[4].length >0) {
-                toDisplay += '\n'+item[4];
+            
+            if (item.desc && item.desc.length > 0) {
+                toDisplay += '\n' + item.desc;
             }
-            toDisplay += "</span>"
-            appendCell(item[1],toDisplay);
+            toDisplay += "</span>";
+            
+            appendCell(item.day, toDisplay);
         }
     }
 
