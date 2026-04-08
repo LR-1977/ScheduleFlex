@@ -119,7 +119,7 @@ app.post("/api/admin/create", async (req, res) => {
             .status(400)
             .json({ success: false, message: "Account already exists." });
     }
-
+x
     // Create the new admin account and hash the password.
     const secureAuth = hashPassword(password);
     let newUser = {
@@ -212,6 +212,7 @@ app.get("/api/calendar/events", async (req, res) => {
 });
 
 
+// User shift change request: swap shifts
 app.post("/api/requests/swap", async (req, res) => {
     if (!req.session.user) {
         return res.status(401).json({succes: false, message: "User not logged in"});
@@ -267,9 +268,10 @@ app.post("/api/requests/swap", async (req, res) => {
     res.json({success: true, message: "Request submitted successfully"});
 });
 
+// User shift change request: day off
 app.post("/api/requests/dayoff", async (req, res) => {
     if (!req.session.user) {
-        return res.status(401).json({succes: false, message: "User not logged in"});
+        return res.status(401).json({success: false, message: "User not logged in"});
     }
     /* // Admin may make request and just have jurisdiction over themself?
     if (req.session.user.role !== "user") {
@@ -303,6 +305,42 @@ app.post("/api/requests/dayoff", async (req, res) => {
 
     await requestsColl.insertOne(requestObj);
     res.json({success: true, message: "Request submitted successfully"});
+});
+
+// Admin retreival of shift change requests with status: in-review
+app.get("/api/requests/inreview", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({success: false, message: "User not logged in"});
+    }
+    if (req.session.user.role !== "admin") {
+        return res.status(403).json({sucess: false, message: "Non Admin-type user attempt to access in-review request"});
+    }
+
+    const requests = await requestsColl.find({status: "in-review"}).toArray();
+    res.json(requests);
+});
+
+// Admin update shift change request status
+app.patch("/api/requests/:id", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({success: false, message: "User not logged in"});
+    }
+    if (req.session.user.role !== "admin") {
+        return res.status(403).json({sucess: false, message: "Non Admin-type user attempt update request status"});
+    }
+
+    const id = req.params.id;
+    const choice = req.body.choice;
+
+    const updated = await requestsColl.findOneAndUpdate.updateOne(
+        {_id: new ObjectId(id), status: "in-review"},
+        {$set: {status: choice}},
+        {returnDocument: "after"}
+    );
+    if (!updated.value) {
+        return res.status(404).json({sucess: false, message: "The shift change request with status: in-review was not found."});
+    }
+    res.json({success: true, message: `Request status changed to ${choice}`});
 });
 
 startServer();
