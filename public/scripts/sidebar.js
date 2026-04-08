@@ -36,13 +36,13 @@ async function renderSidebar() {
             //third item is the string saying the date of the second shift to be rescheduled
             //fourth item is the string of the employee they want to switch with and their current shift time
             //fifth item is the total number of requests for the manager to approve/deny (for display purposes)
-        const rescheduleRequests = [["April 1st", "Alice 9:00-17:00", "April 2nd", "Bob 10:00-18:00",1]];  
-        
-        
+        const rescheduleRequests = [["April 1st", "Alice 9:00-17:00", "April 2nd", "Bob 10:00-18:00",1]];
+
+
         // Depending on when the user is an administrator or not, we show different links.
         if (role === "admin") {
-            
-            getManagerDisplayedShift(workingEmployees[shiftIndex]);   
+
+            getManagerDisplayedShift(workingEmployees[shiftIndex]);
             getReschedule(rescheduleRequests[0]);
 
             // here is buttons
@@ -53,7 +53,7 @@ async function renderSidebar() {
             const logoutLi = document.createElement("li");
             logoutLi.innerHTML = `<button class="nav-link-style" onclick="prevManagerShift()">Prev Shift</button>`;
             navButtons.appendChild(logoutLi);
-        
+
             const approveLi = document.createElement("li");
             approveLi.innerHTML = `<button class="nav-link-style" onclick="approveRequest()">Approve</button>`;
             rescheduleButtons.appendChild(approveLi);
@@ -102,7 +102,7 @@ async function renderSidebar() {
             document.getElementById("side-title").innerText = "Dedicated Drivers Desired Day Dashboard";
         }
 
-                
+
     // here is for the sidebar height
     sidebarHeight();
 
@@ -126,24 +126,24 @@ function getDayOffForm() {
                     `<label for="shift2">Your Shift End Time:</label><br>` +
                     `<input type="text" id="2shift" name="shift2" size="15"><br>` +
                     `<label for="reason">Reason for Day Off:</label><br>` +
-                    `<textarea id="reason" name="reason" rows="4" cols="16"></textarea><br>` +  
+                    `<textarea id="reason" name="reason" rows="4" cols="16"></textarea><br>` +
                     `</form>`;
     sideLinks.appendChild(li);
     submitButton = document.getElementById("day-off-button");
     submitButton.addEventListener("click", async (event) => {
         event.preventDefault();
         const date1 = document.getElementById("1date").value;
-        const shift1 = document.getElementById("1shift").value;        
+        const shift1 = document.getElementById("1shift").value;
         const shift2 = document.getElementById("2shift").value;
         const reason = document.getElementById("reason").value;
         //TODO submit this reschedule request to the db for the manager to approve/deny
-        console.log(`Reschedule Request Submitted: ${date1} ${shift1}-${shift2} -> ${reason}`); 
-        
+        console.log(`Reschedule Request Submitted: ${date1} ${shift1}-${shift2} -> ${reason}`);
+
         //if (await DBResponse== allgood) {
             submitSuccessful();
         //}
-        
-        
+
+
     });
 }
 
@@ -152,7 +152,7 @@ function getRescheduleForm() {
     const li = document.createElement("li");
     li.innerHTML = `<form id="reschedule-form">` +
                     `<label for="date1">Your Shift Date:</label><br>` +
-                    `<input type="date" id="date1" name="date1"><br>` +   
+                    `<input type="date" id="date1" name="date1"><br>` +
                     `<label for="shift1">Your Shift Start Time:</label><br>` +
                     `<input type="text" id="shift1" name="shift1" size="15"><br>` +
                     `<label for="shift2">Your Shift End Time:</label><br>` +
@@ -171,7 +171,7 @@ function getRescheduleForm() {
     submitButton.addEventListener("click", async (event) => {
         event.preventDefault();
         const date1 = document.getElementById("date1").value;
-        const shift1 = document.getElementById("shift1").value;        
+        const shift1 = document.getElementById("shift1").value;
         const date2 = document.getElementById("date2").value;
         const shift2 = document.getElementById("shift2").value;
         //TODO submit this reschedule request to the db for the manager to approve/deny
@@ -214,13 +214,13 @@ function getReschedule(request) {
     toDisplay ="1st Shift:<br> " +
             request[0] + "<br>" +
             request[1] + "<br>" +
-            "2nd Shift:<br> " + 
+            "2nd Shift:<br> " +
             request[2] + "<br>"+
-            request[3] + "<br>";      
+            request[3] + "<br>";
     const li = document.createElement("li");
     li.innerHTML = toDisplay;
-    document.getElementById("reschedule-request").appendChild(li);    
-    
+    document.getElementById("reschedule-request").appendChild(li);
+
 
 }
 
@@ -242,14 +242,14 @@ function getManagerDisplayedShift(shift) {
     manifestTitle.style.fontWeight = "bold";
     manifestTitle.style.fontSize = "18px";
     document.getElementById("side-links").replaceChildren(manifestTitle);
-    
-    
+
+
     const li = document.createElement("li");
-    
+
     console.log(shift);
     toReturn =
         "Date: " + shift[0] + "<br>" +
-        "Your hours:<br>" + 
+        "Your hours:<br>" +
         shift[1] +" - "+ shift[2] +"<br>" +
         "Employees:<br>";
     for(i=3;i<shift.length;i++){
@@ -262,8 +262,8 @@ function getManagerDisplayedShift(shift) {
 function sidebarHeight() {
     /*WHEN REMOVING THE TEMP SWITCH ROLE BUTTON IN THIS FUNCTION:
         remove the line initializing tempControls and change the active line of code in the if statement
-    */ 
-    
+    */
+
     const sidebar = document.getElementById("sidebar");
     const navLinks = document.getElementById("main-header");
     const tempControls = document.getElementById("temp-controls");

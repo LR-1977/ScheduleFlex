@@ -8,7 +8,7 @@ const port = 3000;
 
 const mongoUrl = "mongodb://127.0.0.1:27017/";
 const client = new MongoClient(mongoUrl);
-let db, usersColl, postsColl, sessionsColl;
+let db, usersColl, postsColl, sessionsColl, requestsColl;
 
 async function startServer() {
     try {
@@ -19,6 +19,7 @@ async function startServer() {
         usersColl = db.collection("userCollection");
         invitationsColl = db.collection("invitationCollection");
         eventsColl = db.collection("eventCollection");
+        requestsColl = db.collection("requestCollection");
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
         });
@@ -149,7 +150,7 @@ app.post("/api/invite/validate", async (req, res) => {
 
     }
 
-    
+
 });
 
 // Accept an invited account to make a new user.
@@ -184,7 +185,7 @@ app.post("/api/invite/accept", async (req, res) => {
     await invitationsColl.deleteOne({ code });
 
 
-  
+
     delete req.session.pendingInviteEmail;
     delete req.session.pendingInviteCode;
 
@@ -208,6 +209,100 @@ app.post("/api/logout", (req, res) => {
 app.get("/api/calendar/events", async (req, res) => {
     const events = await eventsColl.find({}).toArray();
     res.json(events);
+});
+
+
+app.post("/api/requests/swap", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({succes: false, message: "User not logged in"});
+    }
+    /* // Admin may make request and just have jurisdiction over themself?
+    if (req.session.user.role !== "user") {
+        return res.status(403).json({success: false, message: "Non User-type user attempt to make request"});
+    }
+    */
+
+    // Required swap info based off of rescheduleRequest form in sidebar.js,
+    // NOTE: sidebar.js is using name and not email as of right now, also user shouldn't need
+    //       to enter secondary name/email, just the shift details if it is available to be
+    //       swapped right? Email must be attached tp shift as part of requestObj though for
+    //       noti purposes
+    // FUTURE: maybe primary data doesn't need to exist other than email if someone wants
+    //         to pick up the secondary email's shift, like only the employee is what's swapped?
+    const primary_email   = req.session.user.email;
+    const primary_date    = req.body.primary_date;
+    const primary_start   = req.body.primary_start;
+    const primary_end     = req.body.primary_end;
+    const secondary_email = req.body.secondary_email;
+    const secondary_date  = req.body.secondary_date;
+    const secondary_start = req.body.secondary_start;
+    const secondary_end   = req.body.secondary_end;
+
+    if (!primary_email || !primary_date || !primary_start || !primary_end ||
+        !secondary_email || !secondary_date || !secondary_start || !secondary_end
+    ) {
+        return res.status(400).json({success: false, message: "Shift info missing for swap request"});
+    }
+
+    const requestObj = {
+        type: "swap-shift",
+        primary_email: primary_email,
+        primary_shift: {
+            date:  primary_date,
+            start: primary_start,
+            end:   primary_end
+        },
+
+        secondary_email: secondary_email,
+        secondary_shift: {
+            date:  secondary_date,
+            start: secondary_start,
+            end:   secondary_end
+        },
+
+        status: "in-review"
+    }
+
+    await requestsColl.insertOne(requestObj);
+    res.json({success: true, message: "Request submitted successfully"});
+});
+
+app.post("/api/requests/dayoff", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({succes: false, message: "User not logged in"});
+    }
+    /* // Admin may make request and just have jurisdiction over themself?
+    if (req.session.user.role !== "user") {
+        return res.status(403).json({success: false, message: "Non User-type user attempt to make request"});
+    }
+    */
+
+    // Based off the required shift-info form items of sidebar.js
+    const email  = req.session.user.email;
+    const date   = req.body.primary_date;
+    const start  = req.body.primary_start;
+    const end    = req.body.primary_end;
+    const reason = req.body.reason;
+
+    // Reason possibly optional? I guess enforce it thru 'required' in form input
+    if (!primary_email || !primary_date || !primary_start || !primary_end || !primary_reason) {
+        return res.status(400).json({success: false, message: "Shift info missing for swap request"});
+    }
+
+    const requestObj = {
+        type: "day-off",
+        email: email,
+        shift: {
+            date:  date,
+            start: start,
+            end:   end
+        },
+        reason: reason,
+        status: "in-review"
+    }
+
+    await requestsColl.insertOne(requestObj);
+    res.json({success: true, message: "Request submitted successfully"});
 });
 
 startServer();
