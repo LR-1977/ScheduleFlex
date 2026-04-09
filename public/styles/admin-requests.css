@@ -1,0 +1,346 @@
+.requests-page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px 60px;
+}
+
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.page-header h1 {
+    margin: 0 0 4px 0;
+    font-size: 1.6rem;
+    color: var(--text-main);
+}
+
+.page-subtitle {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+
+.summary-bar {
+    display: flex;
+    gap: 12px;
+}
+
+.summary-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    min-width: 70px;
+}
+
+.chip-count {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.chip-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0;
+}
+
+.tab {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 0;
+    transition: 0.2s;
+    font-family: inherit;
+}
+
+.tab:hover {
+    color: var(--text-main);
+}
+
+.tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 700;
+}
+
+.requests-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.request-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+/* Accent stripe on the left edge by type */
+.card-swap {
+    border-left: 4px solid var(--navy);
+}
+
+.card-off {
+    border-left: 4px solid var(--accent);
+}
+
+/* Fade-out animation when a card is actioned */
+.card-removing {
+    opacity: 0;
+    transform: translateX(12px);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.card-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 4px;
+}
+
+.badge-swap {
+    background-color: var(--navy);
+    color: #ffffff;
+}
+
+.badge-off {
+    background-color: var(--accent);
+    color: #000000;
+}
+
+.card-body {
+    padding: 16px 20px;
+}
+
+.card-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 24px;
+}
+
+.detail-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+/* Spans full width — used for the reason field */
+.detail-block--full {
+    grid-column: 1 / -1;
+}
+
+.detail-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.detail-value {
+    font-size: 0.92rem;
+    color: var(--text-main);
+    word-break: break-word;
+}
+
+/* Monospace for IDs */
+.mono {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.card-actions {
+    display: flex;
+    gap: 10px;
+    padding: 12px 20px 16px;
+    border-top: 1px solid var(--border);
+    background-color: var(--bg-surface);
+}
+
+.btn-approve {
+    background-color: var(--navy);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 8px 20px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.2s;
+}
+
+.btn-approve:hover {
+    background-color: var(--accent);
+    color: #000000;
+}
+
+.btn-deny {
+    background-color: transparent;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 8px 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.2s;
+}
+
+.btn-deny:hover {
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+[data-theme="dark"] .btn-deny:hover {
+    border-color: #f87171;
+    color: #f87171;
+}
+
+.loading-state,
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    gap: 12px;
+}
+
+.empty-icon {
+    font-size: 2rem;
+    color: var(--accent);
+}
+
+.empty-state p {
+    margin: 0;
+}
+
+.error-state {
+    color: #dc2626;
+}
+
+[data-theme="dark"] .error-state {
+    color: #f87171;
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.visible {
+    display: flex;
+}
+
+.modal {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px 36px;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-message {
+    margin: 0 0 24px 0;
+    font-size: 1rem;
+    color: var(--text-main);
+    text-align: center;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.btn-confirm {
+    background-color: var(--navy);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 8px 24px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.2s;
+}
+
+.btn-confirm:hover {
+    background-color: var(--accent);
+    color: #000000;
+}
+
+.btn-modal-cancel {
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding: 8px 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.2s;
+}
+
+.btn-modal-cancel:hover {
+    border-color: var(--text-main);
+    color: var(--text-main);
+}
+

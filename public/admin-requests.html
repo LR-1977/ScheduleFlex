@@ -4,7 +4,15 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, inital-scale=1.0" />
         <title>ScheduleFlex | Employee Requests</title>
-        <link rel="stylesheet" href="styles/main.css" />
+        <link rel="stylesheet" href="/styles/main.css" />
+        <link rel="stylesheet" href="/styles/admin-requests.css"/>
+        <script>
+            let cookie = document.cookie;
+            let mode = cookie.slice(6);
+            if (mode == "dark") {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        </script>
     </head>
     <body>
         <header class="main-header">
@@ -16,14 +24,51 @@
             </nav>
         </header>
 
-        <!-- Main Error Message -->
-        <h1 style = 'text-align: center;'> Error 401 </h1>
-        <h2 style = 'text-align: center;'> Authorization Required to Access this Page</h2>
-        <div style = 'text-align: center'>
-            <a href = "calendar.html" class = 'return-btn'>Go to Calendar</a> <!-- Should we change to main page once we have our main page? -->
+        <main class = "requests-page">
+            <div class = "page-header">
+                <div>
+                    <h1>Shift Requests</h1>
+                    <p class = "page-subtitle">Review and action pending requests from drivers.</p>
+                </div>
+                <div class = "summary-bar">
+                    <div class = "summary-chip" id = "chip-total">
+                        <span class = "chip-count" id = "count-total">-</span>
+                        <span class = "chip-label">Pending</span>
+                    </div>
+                    <div class = "summary-chip" id = "chip-swap">
+                        <span class="chip-count" id = "count-swap">-</span>
+                        <span class = "chip-label">Swaps</span>
+                    </div>
+                    <div class = "summary-chip" id="chip-off">
+                        <span class = "chip-count" id = "count-off">-</span>
+                        <span class = "chip-label">Time Off</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-tabs" id = "filter-tabs">
+                <button class="tab active" data-filter = "all">All</button>
+                <button class="tab" data-filter = "shift_swap">Swap Shifts</button> 
+                <button class="tab" data-filter = "time_off">Time Off</button>
+            </div>
+
+            <div id="requests-container" class = "requests-container">
+                <div class="loading-state" id="loading-state">
+                    <span>Loading Requests...</span>
+                </div>
+            </div>
+        </main>
+
+        <div class="modal-overlay" id ="modal-overlay">
+            <div class= "modal">
+                <p class = "modal-message" id = "modal-message"></p>
+                <div class = "modal-actions">
+                    <button class = "btn-confirm" id = "modal-confirm">Confirm</button>
+                    <button class= "btn-modal-cancel" id = "modal-cancel">Cancel</button>
+                </div>
+            </div>
         </div>
-
-        <!-- Scripts -->
-
+        <script src="/scripts/navbar.js"></script>
+        <script src = "/scripts/admin-requests.js"></script>
     </body>
 </html>

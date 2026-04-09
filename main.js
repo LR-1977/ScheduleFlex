@@ -428,6 +428,13 @@ app.post("/api/requests/swap", requireLogin, async (req, res) => {
 // });
 
 // Admin Shift Management
+// Admin Requests
+app.get("/admin-requests", (req, res) => {
+    if (!req.session.user) return res.redirect("/");
+    if (req.session.user.role !== "admin") return res.redirect("/calendar");
+    res.sendFile(path.join(__dirname, "public", "admin-requests.html"))
+});
+
 // Admin retreival of shift change requests with status: in-review
 app.get("/api/requests/pending", requireAdmin, async (req, res) => {
     const requests = await requestsColl.find({ status: "pending" }).sort({ createdAt: 1}).toArray();

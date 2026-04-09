@@ -534,7 +534,7 @@ function getManagerDisplayedShift(shift) {
     console.log(shift);
     toReturn =
         "Date: " + shift[0] + "<br>" +
-        "Your hours:<br>" + 
+        "Shift hours:<br>" + 
         shift[1] +" - "+ shift[2] +"<br>" +
         "Employees:<br>";
     for(i=3;i<shift.length;i++){
