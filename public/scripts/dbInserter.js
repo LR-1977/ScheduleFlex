@@ -7,7 +7,7 @@
  */
 
 // mongo stuff
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const crypto = require("crypto");
 
 const mongoUrl = "mongodb://127.0.0.1:27017/";
@@ -56,15 +56,28 @@ async function seedDatabase() {
 
         // 4. Insert Test Calendar Events
         // Mapped from Mun's example data events for testing.
+        const eventIdA = new ObjectId();
+        const eventIdB = new ObjectId();
+        const eventIdC = new ObjectId();
+        const eventIdD = new ObjectId();
         const testEvents = [
-            { monthYear: 'March 2026', day: 5, start: '4am', stop: '1pm', desc: 'test', overnight: false, assignedUsers: ['user2@gmail.com'] },
-            { monthYear: 'March 2026', day: 8, start: '7pm', stop: '2am', desc: '', overnight: true, assignedUsers: ['user2@gmail.com', 'user3@gmail.com'] },
-            { monthYear: 'March 2026', day: 31, start: '10pm', stop: '8am', desc: '', overnight: true, assignedUsers: ['user3@gmail.com'] },
+            { _id: eventIdA, monthYear: 'March 2026', day: 5, start: '4am', stop: '1pm', desc: 'test', overnight: false, assignedUsers: ['user2@gmail.com'] },
+            { _id: eventIdB, monthYear: 'March 2026', day: 8, start: '7pm', stop: '2am', desc: '', overnight: true, assignedUsers: ['user2@gmail.com', 'user3@gmail.com'] },
+            { _id: eventIdC, monthYear: 'March 2026', day: 31, start: '10pm', stop: '8am', desc: '', overnight: true, assignedUsers: ['user3@gmail.com'] },
             // Added one for the current month so your team sees data immediately upon logging in
-            { monthYear: 'April 2026', day: 15, start: '9am', stop: '5pm', desc: 'Mid-month review', overnight: false, assignedUsers: ['user2@gmail.com', 'user3@gmail.com'] }
+            { _id: eventIdD, monthYear: 'April 2026', day: 15, start: '9am', stop: '5pm', desc: 'Mid-month review', overnight: false, assignedUsers: ['user2@gmail.com', 'user3@gmail.com'] }
         ];
         await db.collection("eventCollection").insertMany(testEvents);
         console.log(`Inserted ${testEvents.length} test events.`);
+
+        // 5. Insert Test Requests
+        const testRequests = [
+            { type: "time_off", status: "pending", requestedBy: "user2@gmail.com", shiftId: eventIdD, reason: "Doctor Appointment", createdAt: new Date("2026-04-01T09:00:00Z")},
+            { type: "time_off", status: "pending", requestedBy: "user3@gmail.com", shiftId: eventIdC, reason: "Family event, unable to make it in.", createdAt: new Date("2026-03-28T14:30:00Z")},
+            { type: "shift_swap", status: "pending", requestedBy: "user2@gmail.com", shiftId: eventIdB, targetShiftId: eventIdC, targetUser: "user3@gmail.com", createdAt: new Date("2026-03-25T11:15:00Z")}
+        ];
+        await db.collection("requestCollection").insertMany(testRequests);
+        console.log(`Inserted ${testRequests.length} test requests.`);
 
         console.log("\nDatabase successfully seeded! Testing time!");
 
