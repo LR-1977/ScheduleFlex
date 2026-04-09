@@ -40,9 +40,9 @@ async function seedDatabase() {
 
         // 2. Insert Test Users
         const testUsers = [
-            { email: "user1@gmail.com", ...hashPassword("12345"), type: "admin" },
-            { email: "user2@gmail.com", ...hashPassword("pass123"), type: "user" },
-            { email: "user3@gmail.com", ...hashPassword("password$abc"), type: "user" }
+            { email: "user1@gmail.com", ...hashPassword("12345"), type: "admin", name: 'Admin User'},
+            { email: "user2@gmail.com", ...hashPassword("pass123"), type: "user", name: 'Alice Smith'},
+            { email: "user3@gmail.com", ...hashPassword("password$abc"), type: "user", name: 'Bob Jones'}
         ];
         await db.collection("userCollection").insertMany(testUsers);
         console.log(`Inserted ${testUsers.length} test users.`);
@@ -57,11 +57,11 @@ async function seedDatabase() {
         // 4. Insert Test Calendar Events
         // Mapped from Mun's example data events for testing.
         const testEvents = [
-            { monthYear: 'March 2026', day: 5, start: '4am', stop: '1pm', desc: 'test', overnight: false },
-            { monthYear: 'March 2026', day: 8, start: '7pm', stop: '2am', desc: '', overnight: true },
-            { monthYear: 'March 2026', day: 31, start: '10pm', stop: '8am', desc: '', overnight: true },
+            { monthYear: 'March 2026', day: 5, start: '4am', stop: '1pm', desc: 'test', overnight: false, assignedUsers: ['user2@gmail.com'] },
+            { monthYear: 'March 2026', day: 8, start: '7pm', stop: '2am', desc: '', overnight: true, assignedUsers: ['user2@gmail.com', 'user3@gmail.com'] },
+            { monthYear: 'March 2026', day: 31, start: '10pm', stop: '8am', desc: '', overnight: true, assignedUsers: ['user3@gmail.com'] },
             // Added one for the current month so your team sees data immediately upon logging in
-            { monthYear: 'April 2026', day: 15, start: '9am', stop: '5pm', desc: 'Mid-month review', overnight: false }
+            { monthYear: 'April 2026', day: 15, start: '9am', stop: '5pm', desc: 'Mid-month review', overnight: false, assignedUsers: ['user2@gmail.com', 'user3@gmail.com'] }
         ];
         await db.collection("eventCollection").insertMany(testEvents);
         console.log(`Inserted ${testEvents.length} test events.`);
