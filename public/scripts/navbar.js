@@ -56,10 +56,6 @@ async function handleLogout() {
     }
 }
 
-
-
-
-
 // Theme toggle
 function toggleTheme() {
     const html = document.documentElement;

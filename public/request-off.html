@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ScheduleFlex | Request Time Off</title>
+        <link rel="stylesheet" href="/styles/main.css" />
+        <link rel="stylesheet" href="/styles/request-off.css" />
+        <script>
+            let cookie = document.cookie;
+            let mode = cookie.slice(6);
+            if (mode === "dark") {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        </script>
+    </head>
+    <body>
+        <header id="main-header" class="main-header">
+            <div class="logo">Schedule<span>Flex</span></div>
+            <nav>
+                <ul id="nav-links" class="nav-list"></ul>
+            </nav>
+        </header>
+
+        <main class="form-page">
+            <div class="form-card">
+                <h1>Request Time Off</h1>
+                <p class="form-subtitle">
+                    Select a shift you're assigned to and provide a reason. Your
+                    manager will review and respond.
+                </p>
+
+                <form id="request-off-form" novalidate>
+                    <div class="form-group">
+                        <label for="shift-select">Select Shift</label>
+                        <select id="shift-select" required>
+                            <option value="" disabled selected>
+                                Loading your shifts…
+                            </option>
+                        </select>
+                        <span class="shift-list-note">
+                            Only upcoming shifts you are assigned to are shown.
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reason">Reason for Request</label>
+                        <textarea
+                            id="reason"
+                            placeholder="e.g. Medical appointment, personal matter…"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <hr class="form-divider" />
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit" id="submit-btn">
+                            Submit Request
+                        </button>
+                        <a href="/calendar" class="return-btn">Back to Calendar</a>
+                    </div>
+                </form>
+
+                <div id="form-status" class="form-status"></div>
+            </div>
+        </main>
+
+        <script src="/scripts/navbar.js"></script>
+        <script>
+            const shiftSelect = document.getElementById("shift-select");
+            const form = document.getElementById("request-off-form");
+            const submitBtn = document.getElementById("submit-btn");
+            const statusEl = document.getElementById("form-status");
+
+            function showStatus(msg, type) {
+                statusEl.textContent = msg;
+                statusEl.className = "form-status " + type;
+            }
+
+            // Format a shift option label from an event document
+            function formatShiftLabel(ev) {
+                const overnight = ev.overnight ? "–overnight" : `–${ev.stop}`;
+                const desc = ev.desc ? ` (${ev.desc})` : "";
+                return `${ev.monthYear}, Day ${ev.day}  •  ${ev.start}${overnight}${desc}`;
+            }
+
+            async function loadShifts() {
+                try {
+                    const res = await fetch("/api/calendar/myevents");
+                    if (res.status === 401) {
+                        window.location.href = "/";
+                        return;
+                    }
+                    const events = await res.json();
+
+                    // Filter to only shifts (eventType === "shift" or no eventType set yet)
+                    const shifts = events.filter(
+                        (e) => !e.eventType || e.eventType === "shift"
+                    );
+
+                    shiftSelect.innerHTML = "";
+
+                    if (shifts.length === 0) {
+                        const opt = document.createElement("option");
+                        opt.disabled = true;
+                        opt.selected = true;
+                        opt.textContent = "No upcoming shifts found";
+                        shiftSelect.appendChild(opt);
+                        submitBtn.disabled = true;
+                        return;
+                    }
+
+                    const placeholder = document.createElement("option");
+                    placeholder.value = "";
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    placeholder.textContent = "Choose a shift…";
+                    shiftSelect.appendChild(placeholder);
+
+                    shifts.forEach((ev) => {
+                        const opt = document.createElement("option");
+                        opt.value = ev._id;
+                        opt.textContent = formatShiftLabel(ev);
+                        shiftSelect.appendChild(opt);
+                    });
+                } catch (err) {
+                    shiftSelect.innerHTML =
+                        '<option disabled selected>Failed to load shifts</option>';
+                    submitBtn.disabled = true;
+                    console.error(err);
+                }
+            }
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const shiftId = shiftSelect.value;
+                const reason = document.getElementById("reason").value.trim();
+
+                if (!shiftId) {
+                    showStatus("Please select a shift.", "error");
+                    return;
+                }
+                if (!reason) {
+                    showStatus("Please provide a reason for your request.", "error");
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Submitting…";
+
+                try {
+                    const res = await fetch("/api/requests/timeoff", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ shiftId, reason }),
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok && data.success) {
+                        showStatus(
+                            "Your request has been submitted and is pending manager review.",
+                            "success"
+                        );
+                        form.reset();
+                        await loadShifts(); // Refresh the shift list
+                    } else {
+                        showStatus(
+                            data.message || "Something went wrong. Please try again.",
+                            "error"
+                        );
+                    }
+                } catch (err) {
+                    showStatus("Network error. Please try again.", "error");
+                    console.error(err);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Submit Request";
+                }
+            });
+
+            document.addEventListener("DOMContentLoaded", loadShifts);
+        </script>
+    </body>
+</html>

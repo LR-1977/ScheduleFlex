@@ -8,7 +8,7 @@ const port = 3000;
 
 const mongoUrl = "mongodb://127.0.0.1:27017/";
 const client = new MongoClient(mongoUrl);
-let db, usersColl, postsColl, sessionsColl;
+let db, usersColl, postsColl, sessionsColl, requestsColl;
 
 async function startServer() {
     try {
@@ -19,6 +19,7 @@ async function startServer() {
         usersColl = db.collection("userCollection");
         invitationsColl = db.collection("invitationCollection");
         eventsColl = db.collection("eventCollection");
+        requestsColl = db.collection("requestCollection");
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
         });
@@ -44,7 +45,17 @@ function verifyPassword(password, storedHash, storedSalt) {
     return derivedKey === storedHash;
 }
 
+// Authentication Middleware
+function requireLogin(req, res, next) {
+    if(!req.session.user) return res.status(401).json({success: false, message: "Not Logged in."});
+    next();
+}
 
+function requireAdmin(req, res, next) {
+    if (!req.session.user) return res.status(401).json({success: false, message: "Not logged in"});
+    if (req.session.user.role !== "admin") return res.status(403).json({success: false, message: "Forbidden."});
+    next();
+}
 
 // Middleware
 app.use(express.json());
@@ -69,6 +80,16 @@ app.get("/calendar", (req, res) => {
     if (!req.session.user) return res.redirect("/"); // Protect the calendar
     res.sendFile(path.join(__dirname, "public", "calendar.html"));
 });
+
+app.get("/request-off", (req, res) => {
+    if (!req.session.user) return res.redirect("/");
+    res.sendFile(path.join(__dirname, "public", "request-off.html"));
+})
+
+app.get("/swap-shifts", (req, res) => {
+    if (!req.session.user) return res.redirect("/");
+    res.sendFile(path.join(__dirname, "public", "swap-shifts.html"));
+})
 
 // API Routing
 
@@ -149,7 +170,7 @@ app.post("/api/invite/validate", async (req, res) => {
 
     }
 
-    
+
 });
 
 // Accept an invited account to make a new user.
@@ -184,7 +205,7 @@ app.post("/api/invite/accept", async (req, res) => {
     await invitationsColl.deleteOne({ code });
 
 
-  
+
     delete req.session.pendingInviteEmail;
     delete req.session.pendingInviteCode;
 
@@ -205,9 +226,308 @@ app.post("/api/logout", (req, res) => {
     });
 });
 
+// Calendar API
+// All events (for admin)
 app.get("/api/calendar/events", async (req, res) => {
     const events = await eventsColl.find({}).toArray();
     res.json(events);
 });
+// Logged-in User's events
+app.get("/api/calendar/myevents", requireLogin, async (req, res) => {
+    const events = await eventsColl.find({ assignedUsers : req.session.user.email }).toArray()
+    res.json(events);
+});
+
+// Specific User's shifts by email
+app.get("/api/calendar/userevents", requireLogin, async (req, res) => {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({success: false, message: "Email required."});
+
+    const targetUser = await usersColl.findOne({email});
+    if (!targetUser) return res.status(404).json({ success: false, message: "User not found." });
+
+    const events = await eventsColl.find({ assignedUsers: email}).toArray();
+    res.json(events)
+});
+
+// Requesting APIs
+// User time off request
+app.post("/api/requests/timeoff", requireLogin,async (req, res) => {
+    const { shiftId, reason } = req.body;
+    if (!shiftId || !reason) {
+        return res.status(400).json({success: false, message: "shiftID and reason are required." });
+    }
+
+    const shift = await eventsColl.findOne({
+        _id: new ObjectId(shiftId), assignedUsers: req.session.user.email
+    });
+
+    if (!shift) {
+        return res.status(403).json({ success: false, message: "Shift not found or you are not assigned to it."});
+    }
+
+    const existing = await requestsColl.findOne({
+        type: "time_off", status: "pending", requestedBy: req.session.user.email, shiftId: new ObjectId(shiftId)
+    });
+    if (existing) {
+        return res.status(409).json({ success: false, message: "You already have a pending time-off request for this shift."});
+    }
+
+    await requestsColl.insertOne({
+        type: "time_off", status: "pending", requestedBy: req.session.user.email, shiftId: new ObjectId(shiftId), reason, createdAt: new Date()
+    });
+    res.json({ success: true, message: "Time-off request submitted."});
+})
+
+// User shift change request: swap shifts
+
+app.post("/api/requests/swap", requireLogin, async (req, res) => {
+    const {shiftId, targetShiftId, targetUser } = req.body;
+
+    if (!shiftId || !targetShiftId || !targetUser) {
+        return res.status(400).json({ success: false, message: "shiftId, targetShiftId, and targetUser are required"});
+    }
+
+    if (shiftId === targetShiftId) {
+        return res.status(400).json({ success: false, message: "Cannot swap a shift with iteslf."});
+    }
+    
+    const myShift = await eventsColl.findOne({
+        _id: new ObjectId(shiftId), 
+        assignedUsers: req.session.user.email
+    });
+    if (!myShift) {
+        return res.status(403).json({ success: false, message: "Your shift not found or you are not assigned to it."});
+    }
+
+    const targetShift = await eventsColl.findOne({
+        _id: new ObjectId(targetShiftId),
+        assignedUsers: targetUser
+    });
+    if (!targetShift) {
+        return res.status(403).json({ success: false, message: "Target shift not found or the coworker is not assigned to it." });
+    }
+
+    const existing = await requestsColl.findOne({
+        type: "shift_swap", 
+        status: "pending", 
+        requestedBy: req.session.user.email, 
+        shiftId: new ObjectId(shiftId), 
+        targetShiftId: new ObjectId(targetShiftId)
+    });
+    if (existing) {
+        return res.status(409).json({ success: false, message: "A pending swap request forthese shifts already exist." });
+    }
+
+    await requestsColl.insertOne({
+        type: "shift_swap", 
+        status: "pending",
+        requestedBy: req.session.user.email,
+        shiftId: new ObjectId(shiftId),
+        targetShiftId: new ObjectId(targetShiftId),
+        targetUser,
+        createdAt: new Date()
+    });
+
+    res.json({ success: true, message: "Shift swap request submitted."});
+});
+
+
+// app.post("/api/requests/swap", async (req, res) => {
+//     if (!req.session.user) {
+//         return res.status(401).json({success: false, message: "User not logged in"});
+//     }
+//     /* // Admin may make request and just have jurisdiction over themself?
+//     if (req.session.user.role !== "user") {
+//         return res.status(403).json({success: false, message: "Non User-type user attempt to make request"});
+//     }
+//     */
+
+//     // Required swap info based off of rescheduleRequest form in sidebar.js,
+//     // NOTE: sidebar.js is using name and not email as of right now, also user shouldn't need
+//     //       to enter secondary name/email, just the shift details if it is available to be
+//     //       swapped right? Email must be attached tp shift as part of requestObj though for
+//     //       noti purposes
+//     // FUTURE: maybe primary data doesn't need to exist other than email if someone wants
+//     //         to pick up the secondary email's shift, like only the employee is what's swapped?
+//     const primary_email   = req.session.user.email;
+//     const primary_date    = req.body.primary_date;
+//     const primary_start   = req.body.primary_start;
+//     const primary_end     = req.body.primary_end;
+//     const secondary_email = req.body.secondary_email;
+//     const secondary_date  = req.body.secondary_date;
+//     const secondary_start = req.body.secondary_start;
+//     const secondary_end   = req.body.secondary_end;
+
+//     if (!primary_email || !primary_date || !primary_start || !primary_end ||
+//         !secondary_email || !secondary_date || !secondary_start || !secondary_end
+//     ) {
+//         return res.status(400).json({success: false, message: "Shift info missing for swap request"});
+//     }
+
+//     const requestObj = {
+//         type: "swap-shift",
+//         primary_email: primary_email,
+//         primary_shift: {
+//             date:  primary_date,
+//             start: primary_start,
+//             end:   primary_end
+//         },
+
+//         secondary_email: secondary_email,
+//         secondary_shift: {
+//             date:  secondary_date,
+//             start: secondary_start,
+//             end:   secondary_end
+//         },
+
+//         status: "in-review"
+//     }
+
+//     await requestsColl.insertOne(requestObj);
+//     res.json({success: true, message: "Request submitted successfully"});
+// });
+
+// // User shift change request: day off
+// app.post("/api/requests/dayoff", async (req, res) => {
+//     if (!req.session.user) {
+//         return res.status(401).json({success: false, message: "User not logged in"});
+//     }
+//     /* // Admin may make request and just have jurisdiction over themself?
+//     if (req.session.user.role !== "user") {
+//         return res.status(403).json({success: false, message: "Non User-type user attempt to make request"});
+//     }
+//     */
+
+//     // Based off the required shift-info form items of sidebar.js
+//     const email  = req.session.user.email;
+//     const date   = req.body.primary_date;
+//     const start  = req.body.primary_start;
+//     const end    = req.body.primary_end;
+//     const reason = req.body.reason;
+
+//     // Reason possibly optional? I guess enforce it thru 'required' in form input
+//     if (!primary_email || !primary_date || !primary_start || !primary_end || !primary_reason) {
+//         return res.status(400).json({success: false, message: "Shift info missing for swap request"});
+//     }
+
+//     const requestObj = {
+//         type: "day-off",
+//         email: email,
+//         shift: {
+//             date:  date,
+//             start: start,
+//             end:   end
+//         },
+//         reason: reason,
+//         status: "in-review"
+//     }
+
+//     await requestsColl.insertOne(requestObj);
+//     res.json({success: true, message: "Request submitted successfully"});
+// });
+
+// Admin Shift Management
+// Admin Requests
+app.get("/admin-requests", (req, res) => {
+    if (!req.session.user) return res.redirect("/");
+    if (req.session.user.role !== "admin") return res.redirect("/calendar");
+    res.sendFile(path.join(__dirname, "public", "admin-requests.html"))
+});
+
+// Admin retreival of shift change requests with status: in-review
+app.get("/api/requests/pending", requireAdmin, async (req, res) => {
+    const requests = await requestsColl.find({ status: "pending" }).sort({ createdAt: 1}).toArray();
+    res.json(requests)
+});
+
+// Approve or Deny requests
+app.post("/api/requests/:id/decision", requireAdmin, async (req, res) => {
+    const { decision } = req.body;
+
+    if (!["approved", "denied"].includes(decision)) {
+        return res.status(400).json({ success: false, message: "decision must be 'approved' or 'denied'."});
+    }
+    let requestDoc;
+
+    try {
+        requestDoc = await requestsColl.findOne({ _id: new ObjectId(req.params.id) });
+    } 
+    catch {
+        return res.status(400).json({ success: false, message: "Invalid request ID."});
+    }
+
+    if (!requestDoc) {
+        return res.status(404).json({ sucess: false, message: "Request not found." });
+    }
+
+    if (requestDoc.status !== "pending") {
+        return res.status(409).json({ success: false, message: "This request has already been decided."});
+    }
+
+    if (decision === "approved" && requestDoc.type === "shift_swap") {
+        const requester = requestDoc.requestedBy;
+        const target = requestDoc.targetUser;
+
+        await eventsColl.updateOne(
+            { _id: requestDoc.shiftId },
+            { $pull: {assignedUsers: requester}} 
+        );
+        await eventsColl.updateOne(
+            { _id: requestDoc.shiftId },
+            { $push: { assignedUsers: target } }
+        );
+        await eventsColl.updateOne(
+            { _id: requestDoc.targetShiftId },
+            { $pull: { assignedUsers: target } }
+        );
+        await eventsColl.updateOne(
+            { _id: requestDoc.targetShiftId },
+            { $push: { assignedUsers: requester } }
+        );       
+    }
+    // For time-off we can just mark it and managers can handle manually 
+    await requestsColl.updateOne(
+        { _id: new ObjectId(req.params.id) },
+        { $set: { status: decision, decidedAt: new Date(), decidedBy: req.session.user.email }}
+    );
+
+    res.json({ success: true, message: `Request ${decision}`});
+});
+
+// app.get("/api/requests/inreview", async (req, res) => {
+//     if (!req.session.user) {
+//         return res.status(401).json({success: false, message: "User not logged in"});
+//     }
+//     if (req.session.user.role !== "admin") {
+//         return res.status(403).json({success: false, message: "Non Admin-type user attempt to access in-review request"});
+//     }
+
+//     const requests = await requestsColl.find({status: "in-review"}).toArray();
+//     res.json(requests);
+// });
+
+// // Admin update shift change request status
+// app.patch("/api/requests/:id", async (req, res) => {
+//     if (!req.session.user) {
+//         return res.status(401).json({success: false, message: "User not logged in"});
+//     }
+//     if (req.session.user.role !== "admin") {
+//         return res.status(403).json({success: false, message: "Non Admin-type user attempt update request status"});
+//     }
+
+//     const id = req.params.id;
+//     const choice = req.body.choice;
+
+//     const updated = await requestsColl.findOneAndUpdate.updateOne(
+//         {_id: new ObjectId(id), status: "in-review"},
+//         {$set: {status: choice}},
+//         {returnDocument: "after"}
+//     );
+//     if (!updated.value) {
+//         return res.status(404).json({success: false, message: "The shift change request with status: in-review was not found."});
+//     }
+//     res.json({success: true, message: `Request status changed to ${choice}`});
+// });
 
 startServer();

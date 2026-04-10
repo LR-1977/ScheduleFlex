@@ -66,7 +66,7 @@ async function renderCalendar() {
     //Temporary code to populate test items
 
     try {
-        const response = await fetch('/api/calendar/events');
+        const response = await fetch('/api/calendar/myevents');
         const eventsData = await response.json();
         if (eventsData) {
             populateCalendar(eventsData);

@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ScheduleFlex | Swap Shifts</title>
+        <link rel="stylesheet" href="/styles/main.css" />
+        <link rel="stylesheet" href="/styles/swap-shifts.css" />
+        <script>
+            let cookie = document.cookie;
+            let mode = cookie.slice(6);
+            if (mode === "dark") {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        </script>
+    </head>
+    <body>
+        <header id="main-header" class="main-header">
+            <div class="logo">Schedule<span>Flex</span></div>
+            <nav>
+                <ul id="nav-links" class="nav-list"></ul>
+            </nav>
+        </header>
+
+        <main class="form-page">
+            <div class="form-card">
+                <h1>Swap Shifts</h1>
+                <p class="form-subtitle">
+                    Choose one of your shifts and a coworker's shift to swap with.
+                    Your manager will review the request before any change is made.
+                </p>
+
+                <form id="swap-form" novalidate>
+
+                    <!-- YOUR SHIFT -->
+                    <div class="form-section">
+                        <p class="form-section-label">Your Shift</p>
+                        <div class="form-group">
+                            <label for="my-shift-select">Select your shift</label>
+                            <select id="my-shift-select" required>
+                                <option value="" disabled selected>
+                                    Loading your shifts…
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="swap-arrow">⇅</div>
+
+                    <!-- TARGET SHIFT -->
+                    <div class="form-section">
+                        <p class="form-section-label">Coworker's Shift</p>
+                        <div class="form-group">
+                            <label for="target-email">Coworker's email</label>
+                            <input
+                                type="email"
+                                id="target-email"
+                                placeholder="coworker@example.com"
+                                required
+                                autocomplete="off"
+                            />
+                        </div>
+
+                        <div class="form-group" id="target-shift-group">
+                            <label for="target-shift-select">Select their shift</label>
+                            <select id="target-shift-select" required>
+                                <option value="" disabled selected>
+                                    Choose a shift…
+                                </option>
+                            </select>
+                        </div>
+
+                        <p class="field-note">
+                            Enter your coworker's email to load their available shifts.
+                        </p>
+                    </div>
+
+                    <hr class="form-divider" />
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit" id="submit-btn">
+                            Submit Swap Request
+                        </button>
+                        <a href="/calendar" class="return-btn">Back to Calendar</a>
+                    </div>
+                </form>
+
+                <div id="form-status" class="form-status"></div>
+            </div>
+        </main>
+
+        <script src="/scripts/navbar.js"></script>
+        <script>
+            const myShiftSelect = document.getElementById("my-shift-select");
+            const targetEmailInput = document.getElementById("target-email");
+            const targetShiftGroup = document.getElementById("target-shift-group");
+            const targetShiftSelect = document.getElementById("target-shift-select");
+            const form = document.getElementById("swap-form");
+            const submitBtn = document.getElementById("submit-btn");
+            const statusEl = document.getElementById("form-status");
+
+            let emailLookupTimer = null;
+
+            function showStatus(msg, type) {
+                statusEl.textContent = msg;
+                statusEl.className = "form-status " + type;
+            }
+
+            function clearStatus() {
+                statusEl.textContent = "";
+                statusEl.className = "form-status";
+            }
+
+            function formatShiftLabel(ev) {
+                const overnight = ev.overnight ? "–overnight" : `–${ev.stop}`;
+                const desc = ev.desc ? ` (${ev.desc})` : "";
+                return `${ev.monthYear}, Day ${ev.day}  •  ${ev.start}${overnight}${desc}`;
+            }
+
+            // Load logged-in user's own shifts
+            async function loadMyShifts() {
+                try {
+                    const res = await fetch("/api/calendar/myevents");
+                    if (res.status === 401) {
+                        window.location.href = "/";
+                        return;
+                    }
+                    const events = await res.json();
+                    const shifts = events.filter(
+                        (e) => !e.eventType || e.eventType === "shift"
+                    );
+
+                    myShiftSelect.innerHTML = "";
+
+                    if (shifts.length === 0) {
+                        const opt = document.createElement("option");
+                        opt.disabled = true;
+                        opt.selected = true;
+                        opt.textContent = "No upcoming shifts found";
+                        myShiftSelect.appendChild(opt);
+                        submitBtn.disabled = true;
+                        return;
+                    }
+
+                    const placeholder = document.createElement("option");
+                    placeholder.value = "";
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    placeholder.textContent = "Choose one of your shifts…";
+                    myShiftSelect.appendChild(placeholder);
+
+                    shifts.forEach((ev) => {
+                        const opt = document.createElement("option");
+                        opt.value = ev._id;
+                        opt.textContent = formatShiftLabel(ev);
+                        myShiftSelect.appendChild(opt);
+                    });
+                } catch (err) {
+                    myShiftSelect.innerHTML =
+                        '<option disabled selected>Failed to load shifts</option>';
+                    submitBtn.disabled = true;
+                    console.error(err);
+                }
+            }
+
+            // Load a coworker's shifts by email
+            async function loadTargetShifts(email) {
+                targetShiftSelect.innerHTML =
+                    '<option disabled selected>Loading…</option>';
+                targetShiftGroup.style.display = "flex";
+
+                try {
+                    const res = await fetch(
+                        `/api/calendar/userevents?email=${encodeURIComponent(email)}`
+                    );
+
+                    if (res.status === 404) {
+                        targetShiftGroup.style.display = "none";
+                        showStatus(
+                            "No user found with that email address.",
+                            "error"
+                        );
+                        return;
+                    }
+
+                    const events = await res.json();
+                    const shifts = events.filter(
+                        (e) => !e.eventType || e.eventType === "shift"
+                    );
+
+                    targetShiftSelect.innerHTML = "";
+
+                    if (shifts.length === 0) {
+                        const opt = document.createElement("option");
+                        opt.disabled = true;
+                        opt.selected = true;
+                        opt.textContent = "This coworker has no upcoming shifts";
+                        targetShiftSelect.appendChild(opt);
+                        return;
+                    }
+
+                    const placeholder = document.createElement("option");
+                    placeholder.value = "";
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    placeholder.textContent = "Choose their shift…";
+                    targetShiftSelect.appendChild(placeholder);
+
+                    shifts.forEach((ev) => {
+                        const opt = document.createElement("option");
+                        opt.value = ev._id;
+                        opt.textContent = formatShiftLabel(ev);
+                        targetShiftSelect.appendChild(opt);
+                    });
+
+                    clearStatus();
+                } catch (err) {
+                    targetShiftGroup.style.display = "none";
+                    showStatus("Failed to load coworker's shifts.", "error");
+                    console.error(err);
+                }
+            }
+
+            // Debounce email input — look up after user stops typing for 600ms
+            targetEmailInput.addEventListener("input", () => {
+                clearTimeout(emailLookupTimer);
+                targetShiftGroup.style.display = "none";
+                clearStatus();
+
+                const email = targetEmailInput.value.trim();
+                const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+                if (validEmail) {
+                    emailLookupTimer = setTimeout(() => loadTargetShifts(email), 600);
+                }
+            });
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const shiftId = myShiftSelect.value;
+                const targetEmail = targetEmailInput.value.trim();
+                const targetShiftId = targetShiftSelect.value;
+
+                if (!shiftId) {
+                    showStatus("Please select one of your shifts.", "error");
+                    return;
+                }
+                if (!targetEmail) {
+                    showStatus("Please enter your coworker's email.", "error");
+                    return;
+                }
+                if (!targetShiftId) {
+                    showStatus("Please select your coworker's shift.", "error");
+                    return;
+                }
+                if (shiftId === targetShiftId) {
+                    showStatus("You cannot swap a shift with itself.", "error");
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Submitting…";
+
+                try {
+                    const res = await fetch("/api/requests/swap", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ shiftId, targetShiftId, targetUser: targetEmail }),
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok && data.success) {
+                        showStatus(
+                            "Swap request submitted! Your manager will review it shortly.",
+                            "success"
+                        );
+                        form.reset();
+                        targetShiftGroup.style.display = "none";
+                        await loadMyShifts();
+                    } else {
+                        showStatus(
+                            data.message || "Something went wrong. Please try again.",
+                            "error"
+                        );
+                    }
+                } catch (err) {
+                    showStatus("Network error. Please try again.", "error");
+                    console.error(err);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Submit Swap Request";
+                }
+            });
+
+            document.addEventListener("DOMContentLoaded", loadMyShifts);
+        </script>
+    </body>
+</html>
