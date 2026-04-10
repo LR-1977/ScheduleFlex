@@ -181,7 +181,7 @@ button {
 .sideBar {
     position: absolute;
     left: 0;
-    top: 0;
+    top: 13em;
     bottom:0;
     width: 150px;
     height: fit-content;
@@ -229,4 +229,3 @@ button {
         grid-template-columns: 1fr;
     }
 }
-

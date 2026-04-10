@@ -8,7 +8,7 @@ const port = 3000;
 
 const mongoUrl = "mongodb://127.0.0.1:27017/";
 const client = new MongoClient(mongoUrl);
-let db, usersColl, postsColl, sessionsColl, requestsColl;
+let db, usersColl, invitationsColl, eventsColl, requestsColl;
 
 async function startServer() {
     try {
@@ -110,7 +110,7 @@ app.post("/api/login", async (req, res) => {
 
     // Check if the user exists and the password is correct
     if (user && verifyPassword(password, user.hash, user.salt)) {
-        req.session.user = { email: email, role: user.type };
+        req.session.user = { email: email, role: user.role };
         res.json({ success: true, message: "Login successful" });
     } else {
         res.status(401).json({
@@ -145,7 +145,7 @@ app.post("/api/admin/create", async (req, res) => {
     let newUser = {
         hash: secureAuth.hash,
         salt: secureAuth.salt,
-        type: "admin",
+        role: "admin",
     };
 
     await usersColl.insertOne({ email, ...newUser });
@@ -198,7 +198,7 @@ app.post("/api/invite/accept", async (req, res) => {
     let newUser = {
         hash: secureAuth.hash,
         salt: secureAuth.salt,
-        type: "user",
+        role: "user",
     };
 
     await usersColl.insertOne({ email, ...newUser });
@@ -291,9 +291,9 @@ app.post("/api/requests/swap", requireLogin, async (req, res) => {
     if (shiftId === targetShiftId) {
         return res.status(400).json({ success: false, message: "Cannot swap a shift with iteslf."});
     }
-    
+
     const myShift = await eventsColl.findOne({
-        _id: new ObjectId(shiftId), 
+        _id: new ObjectId(shiftId),
         assignedUsers: req.session.user.email
     });
     if (!myShift) {
@@ -309,10 +309,10 @@ app.post("/api/requests/swap", requireLogin, async (req, res) => {
     }
 
     const existing = await requestsColl.findOne({
-        type: "shift_swap", 
-        status: "pending", 
-        requestedBy: req.session.user.email, 
-        shiftId: new ObjectId(shiftId), 
+        type: "shift_swap",
+        status: "pending",
+        requestedBy: req.session.user.email,
+        shiftId: new ObjectId(shiftId),
         targetShiftId: new ObjectId(targetShiftId)
     });
     if (existing) {
@@ -320,7 +320,7 @@ app.post("/api/requests/swap", requireLogin, async (req, res) => {
     }
 
     await requestsColl.insertOne({
-        type: "shift_swap", 
+        type: "shift_swap",
         status: "pending",
         requestedBy: req.session.user.email,
         shiftId: new ObjectId(shiftId),
@@ -452,7 +452,7 @@ app.post("/api/requests/:id/decision", requireAdmin, async (req, res) => {
 
     try {
         requestDoc = await requestsColl.findOne({ _id: new ObjectId(req.params.id) });
-    } 
+    }
     catch {
         return res.status(400).json({ success: false, message: "Invalid request ID."});
     }
@@ -471,7 +471,7 @@ app.post("/api/requests/:id/decision", requireAdmin, async (req, res) => {
 
         await eventsColl.updateOne(
             { _id: requestDoc.shiftId },
-            { $pull: {assignedUsers: requester}} 
+            { $pull: {assignedUsers: requester}}
         );
         await eventsColl.updateOne(
             { _id: requestDoc.shiftId },
@@ -484,9 +484,9 @@ app.post("/api/requests/:id/decision", requireAdmin, async (req, res) => {
         await eventsColl.updateOne(
             { _id: requestDoc.targetShiftId },
             { $push: { assignedUsers: requester } }
-        );       
+        );
     }
-    // For time-off we can just mark it and managers can handle manually 
+    // For time-off we can just mark it and managers can handle manually
     await requestsColl.updateOne(
         { _id: new ObjectId(req.params.id) },
         { $set: { status: decision, decidedAt: new Date(), decidedBy: req.session.user.email }}
