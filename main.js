@@ -2,6 +2,7 @@ const express = require("express");
 const session = require("express-session");
 const path = require("path");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const { MongoClient, ObjectId } = require("mongodb");
 const app = express();
 const port = 3000;
@@ -10,6 +11,32 @@ const mongoUrl = "mongodb://127.0.0.1:27017/";
 const client = new MongoClient(mongoUrl);
 let db, usersColl, postsColl, sessionsColl, requestsColl;
 
+const SMTP_HOST = "mail.orvik.com";
+const SMTP_USER = "scheduleflex.notifications";
+const SMTP_PASS = "PUT_PASS_HERE"; // replace w/ actual password when testing. DO NOT SHARE THIS PW TO GITHUB
+
+const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: 587,
+    secure: false,
+    auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+    },
+});
+async function sendInviteEmail(recipientEmail, inviteCode) {
+    try {
+        const info = await transporter.sendMail({
+            from: `"ScheduleFlex Admin" <${SMTP_USER}>`,
+            to: recipientEmail,
+            subject: "You've been invited to ScheduleFlex",
+            text: `Hello!\n\nYou have been invited to join the ScheduleFlex platform.\n\nYour secure invite code is: ${inviteCode}\n\nPlease enter this code on the login portal to create your password and set up your account.`
+        });
+        console.log(`Email successfully sent to ${recipientEmail} | Message ID: ${info.messageId}`);
+    } catch (error) {
+        console.error("SMTP Error: Could not send email.", error);
+    }
+}
 async function startServer() {
     try {
         await client.connect();
@@ -530,4 +557,53 @@ app.post("/api/requests/:id/decision", requireAdmin, async (req, res) => {
 //     res.json({success: true, message: `Request status changed to ${choice}`});
 // });
 
+
+// Admin invite email sending:
+app.post("/api/admin/invite/create", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "admin") {
+        return res.status(403).json({ success: false, message: "Unauthorized. Admins only." });
+    }
+
+    const { targetEmail } = req.body;
+    
+    if (!targetEmail) {
+        return res.status(400).json({ success: false, message: "Email is required." });
+    }
+
+    const existingUser = await usersColl.findOne({ email: targetEmail });
+    if (existingUser) {
+        return res.status(400).json({ success: false, message: "User already has an account." });
+    }
+
+    const inviteCode = crypto.randomUUID();
+
+    try {
+        await invitationsColl.insertOne({ code: inviteCode, email: targetEmail });
+
+        // Call Nodemailer to send the email directly through your VPS
+        sendInviteEmail(targetEmail, inviteCode); 
+
+        res.json({ success: true, message: "Invite generated and email sent." });
+    } catch (error) {
+        console.error("Database error creating invite:", error);
+        res.status(500).json({ success: false, message: "Internal server error." });
+    }
+});
+
+// Fetch all employees.
+app.get("/api/admin/employees", async (req, res) => {
+    // 1. Strict Role Check
+    if (!req.session.user || req.session.user.role !== "admin") {
+        return res.status(403).json({ success: false, message: "Unauthorized. Admins only." });
+    }
+
+    try {
+        // Fetch all users, but explicitly EXCLUDE the hash and salt fields
+        const employees = await usersColl.find({}, { projection: { hash: 0, salt: 0 } }).toArray();
+        res.json({ success: true, employees });
+    } catch (error) {
+        console.error("Error fetching employees:", error);
+        res.status(500).json({ success: false, message: "Server error fetching employees." });
+    }
+});
 startServer();

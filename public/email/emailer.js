@@ -1,4 +1,6 @@
 // npm install nodemailer
+
+// NOTE: This code will run on the actual server that sends emails.
 let http = require("http");
 let nodemailer = require("nodemailer");
 let fs = require("fs");
@@ -82,7 +84,7 @@ const server = http.createServer(async (req, res) => {
 
         let data;
         try {
-            data = JSON.parse();
+            data = JSON.parse(jsonString);
         } catch {
             return sendResponse(res, 400, { "error": "Invalid JSON" });
         }
