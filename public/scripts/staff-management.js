@@ -5,7 +5,7 @@ function showMessage(msg, isSuccess) {
     msgBox.style.display = "block";
     msgBox.style.backgroundColor = isSuccess ? "#d4edda" : "#f8d7da";
     msgBox.style.color = isSuccess ? "#155724" : "#721c24";
-    
+
     setTimeout(() => {
         msgBox.style.display = "none";
     }, 4000);
@@ -14,25 +14,35 @@ function showMessage(msg, isSuccess) {
 // 1. Fetch and render the employee list
 async function loadEmployees() {
     const tableBody = document.getElementById("employee-table-body");
-    
+
     try {
         const response = await fetch('/api/admin/employees');
         const data = await response.json();
 
         if (response.ok) {
             tableBody.innerHTML = ""; // Clear loading text
-            
+
             data.employees.forEach(emp => {
                 const row = document.createElement("tr");
-                
-                const roleDisplay = emp.type === "admin" 
-                    ? `<span class="admin-badge">Admin</span>` 
+
+                const roleDisplay = emp.type === "admin"
+                    ? `<span class="admin-badge">Admin</span>`
                     : `Staff`;
+
+                const roleAction = emp.type === "admin"
+                    ? "Demote to User"
+                    : "Promote to Admin";
 
                 row.innerHTML = `
                     <td>${emp.email}</td>
                     <td>${roleDisplay}</td>
-                    <td><button disabled>Edit (WIP)</button></td>
+                    <td>
+                        <button id="edit-user-btn" data-email="${emp.email}" data-type="${emp.type}">Edit</button>
+                    </td>
+                    <td class="employee-controls" style="visibility: collapse">
+                        <button id="change-role-btn" data-email="${emp.email}" data-type="${emp.type}">${roleAction}</button>
+                        <button id="remove-user-btn" data-email="${emp.email}">Delete</button>
+                    </td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -46,10 +56,85 @@ async function loadEmployees() {
     }
 }
 
-// 2. Handle the invite form submission
+// 2. Handle employee edit controls
+function handleEmployeeEdits(event) {
+    const button = event.target.querySelector("#edit-user-btn");
+    const empRow = button.closest("tr");
+
+    const empEmail = button.dataset.email;
+    const empType = button.dataset.type;
+    const controls = row.querySelector(".employees-controls");
+
+    if (button.classList.contains("edit-user-btn")) {
+        const editHidden = controls.style.visibility === "collapse";
+        controls.style.visibility = isHidden ? "visible" : "collapse";
+        return;
+    }
+    if (button.classList.contains("change-role-btn")) {
+        handleChangeUserType(empEmail, empType);
+        return;
+    }
+    if (button.classList.contains("remove-user-btn")) {
+        handleRemoveUser(empEmail);
+        return;
+    }
+}
+
+// Update employee type
+async function handleChangeUserType(email, type) {
+    const setType = type === "admin" ? "user" : "admin";
+
+    try {
+        const response = await fetch('/api/admin/employees/type', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, setType })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage(`Successfully updated ${email} role to ${setType}.`, true);
+            loadEmployees();
+        } else {
+            showMessage(data.message || "Failed to change user type.", false);
+        }
+    } catch (error) {
+        showMessage("Network Error. Could not change user type.", false);
+    }
+}
+
+// Delete employee by email
+async function handleRemoveUser(email) {
+    const confirmation = confirm(`Permanently Delete ${email} ?`);
+    if (!confirmation) return;
+
+    try {
+        const response = await fetch("/api/admin/employees", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage(`Successfully deleted user: ${email}.`, true);
+            loadEmployees();
+        } else {
+            showMessage(data.message || `Failed to delete user.`, false);
+        }
+    } catch (error) {
+        showMessage("Network Error. Could not delete user.", false);
+    }
+}
+
+
+
+// 3. Handle the invite form submission
 async function handleInviteSubmit(event) {
     event.preventDefault();
-    
+
     const emailInput = document.getElementById("invite-email");
     const targetEmail = emailInput.value.trim();
     const submitBtn = event.target.querySelector("button");
@@ -81,12 +166,17 @@ async function handleInviteSubmit(event) {
     }
 }
 
-// 3. Initialize the page
+// 4. Initialize the page
 document.addEventListener("DOMContentLoaded", () => {
     loadEmployees();
-    
+
     const inviteForm = document.getElementById("invite-form");
     if (inviteForm) {
         inviteForm.addEventListener("submit", handleInviteSubmit);
+    }
+
+    const tableBody = document.getElementById("employee-table-body");
+    if (tableBody) {
+        tableBody.addEventListener("click", handleEmployeeEdits);
     }
 });

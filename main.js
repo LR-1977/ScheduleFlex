@@ -434,34 +434,39 @@ app.post("/api/admin/assign", requireAdmin, async (req, res) => {
         return res.json({ success: false, messsage: "Cant assign users to shift, expected type Array of user(s)."});
     }
 
-    const scheduled = await eventsColl.findOne({
-        monthYear: shift.monthYear,
-        day: shift.day,
-        start: shift.start,
-        stop: shift.stop
-    });
-
-    // Handle existing rewrite of existing assignment as a swap, allow admins
-    // to override swapping, need to email all involved
-    if (scheduled) {
-        await eventsColl.updateOne(
-            { _id: scheduled._id },
-            { $set: { assignedUsers: assignees } }
-        );
-    }
-    // No existing shift: New assignment, need email update
-    else {
-        await eventsColl.insertOne({
+    try {
+        const scheduled = await eventsColl.findOne({
             monthYear: shift.monthYear,
             day: shift.day,
             start: shift.start,
-            stop: shift.stop,
-            desc: shift.desc,
-            overnight: shift.overnight,
-            assignedUsers: assignees
+            stop: shift.stop
         });
+
+        // Handle existing rewrite of existing assignment as a swap, allow admins
+        // to override swapping, need to email all involved
+        if (scheduled) {
+            await eventsColl.updateOne(
+                { _id: scheduled._id },
+                { $set: { assignedUsers: assignees } }
+            );
+        }
+        // No existing shift: New assignment, need email update
+        else {
+            await eventsColl.insertOne({
+                monthYear: shift.monthYear,
+                day: shift.day,
+                start: shift.start,
+                stop: shift.stop,
+                desc: shift.desc,
+                overnight: shift.overnight,
+                assignedUsers: assignees
+            });
+        }
+        res.json({ success: true, message: `Successfully assigned shift to: ${assignees}` })
+    } catch (error) {
+        console.error("Error fetching/patching employees:", error);
+        res.json({ sucess: false, message: "Server error assigning shift." });
     }
-    res.json({ success: true, message: `Successfully assigned shift to: ${assignees}`})
 });
 
 
@@ -513,4 +518,67 @@ app.get("/api/admin/employees", async (req, res) => {
         res.status(500).json({ success: false, message: "Server error fetching employees." });
     }
 });
+
+// Update employee type
+app.patch("/api/admin/employees/type", requireAdmin, async (req, res) => {
+    const { email, type } = req.body;
+    if (!email || !type || !["admin", "user"].includes(type)) {
+        return res.json({ success: false, message: "Invalid employee update params." });
+    }
+
+    try {
+        const target = await usersColl.findOne({ email: email });
+        if (!target) {
+            return res.json({ success: false, message: "Couldn't find target user for update." });
+        }
+
+        // Ensure there is always >= 1 admin
+        const numAdmins = await usersColl.countDocuments({ type: "admin" });
+        if ( target && target.type === "admin" && numAdmins <= 1) {
+            return res.json({ success: false, message: "Denied attempt to demote remaining admin." });
+        }
+
+        // Safely update type
+        await usersColl.updateOne(
+            { email: email },
+            { $set: { type: type } }
+        )
+
+        res.json({ success: true, message: `Updated email: ${email} to type: ${type}` });
+    } catch (error) {
+        console.error("Error patching employee:", error);
+        res.json({ success: false, message: "Server error patching employee." });
+    }
+});
+
+// Delete employee
+app.delete("/api/admin/employees", requireAdmin, async (req, res) => {
+    const { email } = req.body;
+    if (email === req.session.user.email) {
+        return res.json({ success: false, message: "Attempt to delete active session email." });
+    }
+
+    try {
+        // Ensure there is always >= 1 admin
+        const numAdmins = await usersColl.countDocuments({ type: "admin" });
+        const target = await usersColl.findOne({ email: email });
+        if ( target && target.type === "admin" && numAdmins <= 1) {
+            return res.json({ success: false, message: "Denied attempt to delete remaining admin." });
+        }
+
+        // Safely delete
+        const deletion = await usersColl.deleteOne({ email: email });
+        if (deletion.deletedCount === 0) {
+            return res.json({ success: false, message: "Couldn't find target user to delete." });
+        }
+
+        res.json({ success: true, message: `Deleted email: ${email}` });
+
+    } catch (error) {
+        console.error("Error deleting employee:", error);
+        res.json({ success: false, message: "Server error deleting employee." });
+    }
+});
+
+
 startServer();
