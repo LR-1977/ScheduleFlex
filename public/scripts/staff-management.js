@@ -25,11 +25,11 @@ async function loadEmployees() {
             data.employees.forEach(emp => {
                 const row = document.createElement("tr");
 
-                const roleDisplay = emp.type === "admin"
+                const roleDisplay = emp.role === "admin"
                     ? `<span class="admin-badge">Admin</span>`
                     : `Staff`;
 
-                const roleAction = emp.type === "admin"
+                const roleAction = emp.role === "admin"
                     ? "Demote to User"
                     : "Promote to Admin";
 
@@ -37,11 +37,11 @@ async function loadEmployees() {
                     <td>${emp.email}</td>
                     <td>${roleDisplay}</td>
                     <td>
-                        <button id="edit-user-btn" data-email="${emp.email}" data-type="${emp.type}">Edit</button>
+                        <button class="edit-user-btn" data-email="${emp.email}" data-role="${emp.role}">Edit</button>
                     </td>
-                    <td class="employee-controls" style="visibility: collapse">
-                        <button id="change-role-btn" data-email="${emp.email}" data-type="${emp.type}">${roleAction}</button>
-                        <button id="remove-user-btn" data-email="${emp.email}">Delete</button>
+                    <td class="employee-controls" style="display: none">
+                        <button class="change-role-btn" data-email="${emp.email}" data-role="${emp.role}">${roleAction}</button>
+                        <button class="remove-user-btn" data-email="${emp.email}">Delete</button>
                     </td>
                 `;
                 tableBody.appendChild(row);
@@ -58,20 +58,23 @@ async function loadEmployees() {
 
 // 2. Handle employee edit controls
 function handleEmployeeEdits(event) {
-    const button = event.target.querySelector("#edit-user-btn");
+    const button = event.target.closest("button");
+    if (!button) return;
+
     const empRow = button.closest("tr");
+    if (!empRow) return;
 
     const empEmail = button.dataset.email;
-    const empType = button.dataset.type;
-    const controls = row.querySelector(".employees-controls");
+    const empRole = button.dataset.role;
+    const controls = empRow.querySelector(".employee-controls");
 
     if (button.classList.contains("edit-user-btn")) {
-        const editHidden = controls.style.visibility === "collapse";
-        controls.style.visibility = isHidden ? "visible" : "collapse";
+        const editHidden = controls.style.display === "none";
+        controls.style.display = editHidden ? "table-cell" : "none";
         return;
     }
     if (button.classList.contains("change-role-btn")) {
-        handleChangeUserType(empEmail, empType);
+        handleChangeUserRole(empEmail, empRole);
         return;
     }
     if (button.classList.contains("remove-user-btn")) {
@@ -80,27 +83,27 @@ function handleEmployeeEdits(event) {
     }
 }
 
-// Update employee type
-async function handleChangeUserType(email, type) {
-    const setType = type === "admin" ? "user" : "admin";
+// Update employee role
+async function handleChangeUserRole(email, role) {
+    const setRole = role === "admin" ? "user" : "admin";
 
     try {
-        const response = await fetch('/api/admin/employees/type', {
+        const response = await fetch('/api/admin/employees/role', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, setType })
+            body: JSON.stringify({ email, role: setRole })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            showMessage(`Successfully updated ${email} role to ${setType}.`, true);
+            showMessage(`Successfully updated ${email} role to ${setRole}.`, true);
             loadEmployees();
         } else {
-            showMessage(data.message || "Failed to change user type.", false);
+            showMessage(data.message || "Failed to change user role.", false);
         }
     } catch (error) {
-        showMessage("Network Error. Could not change user type.", false);
+        showMessage("Network Error. Could not change user role.", false);
     }
 }
 

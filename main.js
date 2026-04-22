@@ -519,10 +519,10 @@ app.get("/api/admin/employees", async (req, res) => {
     }
 });
 
-// Update employee type
-app.patch("/api/admin/employees/type", requireAdmin, async (req, res) => {
-    const { email, type } = req.body;
-    if (!email || !type || !["admin", "user"].includes(type)) {
+// Update employee role
+app.patch("/api/admin/employees/role", requireAdmin, async (req, res) => {
+    const { email, role } = req.body;
+    if (!email || !role || !["admin", "user"].includes(role)) {
         return res.json({ success: false, message: "Invalid employee update params." });
     }
 
@@ -533,18 +533,18 @@ app.patch("/api/admin/employees/type", requireAdmin, async (req, res) => {
         }
 
         // Ensure there is always >= 1 admin
-        const numAdmins = await usersColl.countDocuments({ type: "admin" });
-        if ( target && target.type === "admin" && numAdmins <= 1) {
+        const numAdmins = await usersColl.countDocuments({ role: "admin" });
+        if ( target && target.role === "admin" && numAdmins <= 1) {
             return res.json({ success: false, message: "Denied attempt to demote remaining admin." });
         }
 
-        // Safely update type
+        // Safely update role
         await usersColl.updateOne(
             { email: email },
-            { $set: { type: type } }
+            { $set: { role: role } }
         )
 
-        res.json({ success: true, message: `Updated email: ${email} to type: ${type}` });
+        res.json({ success: true, message: `Updated email: ${email} to role: ${role}` });
     } catch (error) {
         console.error("Error patching employee:", error);
         res.json({ success: false, message: "Server error patching employee." });
@@ -560,9 +560,9 @@ app.delete("/api/admin/employees", requireAdmin, async (req, res) => {
 
     try {
         // Ensure there is always >= 1 admin
-        const numAdmins = await usersColl.countDocuments({ type: "admin" });
+        const numAdmins = await usersColl.countDocuments({ role: "admin" });
         const target = await usersColl.findOne({ email: email });
-        if ( target && target.type === "admin" && numAdmins <= 1) {
+        if ( target && target.role === "admin" && numAdmins <= 1) {
             return res.json({ success: false, message: "Denied attempt to delete remaining admin." });
         }
 
