@@ -181,10 +181,10 @@ button {
 .sideBar {
     position: absolute;
     left: 0;
-    top: 13em;
+    top: 3.6rem;
     bottom:0;
     width: 150px;
-    height: fit-content;
+    height: 100%;
     overflow: hidden;
 
     background-color: var(--navy);
