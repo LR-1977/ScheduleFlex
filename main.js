@@ -359,102 +359,6 @@ app.post("/api/requests/swap", requireLogin, async (req, res) => {
     res.json({ success: true, message: "Shift swap request submitted."});
 });
 
-
-// app.post("/api/requests/swap", async (req, res) => {
-//     if (!req.session.user) {
-//         return res.status(401).json({success: false, message: "User not logged in"});
-//     }
-//     /* // Admin may make request and just have jurisdiction over themself?
-//     if (req.session.user.role !== "user") {
-//         return res.status(403).json({success: false, message: "Non User-type user attempt to make request"});
-//     }
-//     */
-
-//     // Required swap info based off of rescheduleRequest form in sidebar.js,
-//     // NOTE: sidebar.js is using name and not email as of right now, also user shouldn't need
-//     //       to enter secondary name/email, just the shift details if it is available to be
-//     //       swapped right? Email must be attached tp shift as part of requestObj though for
-//     //       noti purposes
-//     // FUTURE: maybe primary data doesn't need to exist other than email if someone wants
-//     //         to pick up the secondary email's shift, like only the employee is what's swapped?
-//     const primary_email   = req.session.user.email;
-//     const primary_date    = req.body.primary_date;
-//     const primary_start   = req.body.primary_start;
-//     const primary_end     = req.body.primary_end;
-//     const secondary_email = req.body.secondary_email;
-//     const secondary_date  = req.body.secondary_date;
-//     const secondary_start = req.body.secondary_start;
-//     const secondary_end   = req.body.secondary_end;
-
-//     if (!primary_email || !primary_date || !primary_start || !primary_end ||
-//         !secondary_email || !secondary_date || !secondary_start || !secondary_end
-//     ) {
-//         return res.status(400).json({success: false, message: "Shift info missing for swap request"});
-//     }
-
-//     const requestObj = {
-//         type: "swap-shift",
-//         primary_email: primary_email,
-//         primary_shift: {
-//             date:  primary_date,
-//             start: primary_start,
-//             end:   primary_end
-//         },
-
-//         secondary_email: secondary_email,
-//         secondary_shift: {
-//             date:  secondary_date,
-//             start: secondary_start,
-//             end:   secondary_end
-//         },
-
-//         status: "in-review"
-//     }
-
-//     await requestsColl.insertOne(requestObj);
-//     res.json({success: true, message: "Request submitted successfully"});
-// });
-
-// // User shift change request: day off
-// app.post("/api/requests/dayoff", async (req, res) => {
-//     if (!req.session.user) {
-//         return res.status(401).json({success: false, message: "User not logged in"});
-//     }
-//     /* // Admin may make request and just have jurisdiction over themself?
-//     if (req.session.user.role !== "user") {
-//         return res.status(403).json({success: false, message: "Non User-type user attempt to make request"});
-//     }
-//     */
-
-//     // Based off the required shift-info form items of sidebar.js
-//     const email  = req.session.user.email;
-//     const date   = req.body.primary_date;
-//     const start  = req.body.primary_start;
-//     const end    = req.body.primary_end;
-//     const reason = req.body.reason;
-
-//     // Reason possibly optional? I guess enforce it thru 'required' in form input
-//     if (!primary_email || !primary_date || !primary_start || !primary_end || !primary_reason) {
-//         return res.status(400).json({success: false, message: "Shift info missing for swap request"});
-//     }
-
-//     const requestObj = {
-//         type: "day-off",
-//         email: email,
-//         shift: {
-//             date:  date,
-//             start: start,
-//             end:   end
-//         },
-//         reason: reason,
-//         status: "in-review"
-//     }
-
-//     await requestsColl.insertOne(requestObj);
-//     res.json({success: true, message: "Request submitted successfully"});
-// });
-
-// Admin Shift Management
 // Admin Requests
 app.get("/admin-requests", (req, res) => {
     if (!req.session.user) return res.redirect("/");
@@ -522,40 +426,48 @@ app.post("/api/requests/:id/decision", requireAdmin, async (req, res) => {
     res.json({ success: true, message: `Request ${decision}`});
 });
 
-// app.get("/api/requests/inreview", async (req, res) => {
-//     if (!req.session.user) {
-//         return res.status(401).json({success: false, message: "User not logged in"});
-//     }
-//     if (req.session.user.role !== "admin") {
-//         return res.status(403).json({success: false, message: "Non Admin-type user attempt to access in-review request"});
-//     }
 
-//     const requests = await requestsColl.find({status: "in-review"}).toArray();
-//     res.json(requests);
-// });
+// Assign Shift
+app.post("/api/admin/assign", requireAdmin, async (req, res) => {
+    const { shift, assignees } = req.body;
+    if (!Array.isArray(assignees)) {
+        return res.json({ success: false, messsage: "Cant assign users to shift, expected type Array of user(s)."});
+    }
 
-// // Admin update shift change request status
-// app.patch("/api/requests/:id", async (req, res) => {
-//     if (!req.session.user) {
-//         return res.status(401).json({success: false, message: "User not logged in"});
-//     }
-//     if (req.session.user.role !== "admin") {
-//         return res.status(403).json({success: false, message: "Non Admin-type user attempt update request status"});
-//     }
+    try {
+        const scheduled = await eventsColl.findOne({
+            monthYear: shift.monthYear,
+            day: shift.day,
+            start: shift.start,
+            stop: shift.stop
+        });
 
-//     const id = req.params.id;
-//     const choice = req.body.choice;
-
-//     const updated = await requestsColl.findOneAndUpdate.updateOne(
-//         {_id: new ObjectId(id), status: "in-review"},
-//         {$set: {status: choice}},
-//         {returnDocument: "after"}
-//     );
-//     if (!updated.value) {
-//         return res.status(404).json({success: false, message: "The shift change request with status: in-review was not found."});
-//     }
-//     res.json({success: true, message: `Request status changed to ${choice}`});
-// });
+        // Handle existing rewrite of existing assignment as a swap, allow admins
+        // to override swapping, need to email all involved
+        if (scheduled) {
+            await eventsColl.updateOne(
+                { _id: scheduled._id },
+                { $set: { assignedUsers: assignees } }
+            );
+        }
+        // No existing shift: New assignment, need email update
+        else {
+            await eventsColl.insertOne({
+                monthYear: shift.monthYear,
+                day: shift.day,
+                start: shift.start,
+                stop: shift.stop,
+                desc: shift.desc,
+                overnight: shift.overnight,
+                assignedUsers: assignees
+            });
+        }
+        res.json({ success: true, message: `Successfully assigned shift to: ${assignees}` })
+    } catch (error) {
+        console.error("Error fetching/patching employees:", error);
+        res.json({ sucess: false, message: "Server error assigning shift." });
+    }
+});
 
 
 // Admin invite email sending:
@@ -565,7 +477,7 @@ app.post("/api/admin/invite/create", async (req, res) => {
     }
 
     const { targetEmail } = req.body;
-    
+
     if (!targetEmail) {
         return res.status(400).json({ success: false, message: "Email is required." });
     }
@@ -581,7 +493,7 @@ app.post("/api/admin/invite/create", async (req, res) => {
         await invitationsColl.insertOne({ code: inviteCode, email: targetEmail });
 
         // Call Nodemailer to send the email directly through your VPS
-        sendInviteEmail(targetEmail, inviteCode); 
+        sendInviteEmail(targetEmail, inviteCode);
 
         res.json({ success: true, message: "Invite generated and email sent." });
     } catch (error) {
@@ -606,4 +518,67 @@ app.get("/api/admin/employees", async (req, res) => {
         res.status(500).json({ success: false, message: "Server error fetching employees." });
     }
 });
+
+// Update employee type
+app.patch("/api/admin/employees/type", requireAdmin, async (req, res) => {
+    const { email, type } = req.body;
+    if (!email || !type || !["admin", "user"].includes(type)) {
+        return res.json({ success: false, message: "Invalid employee update params." });
+    }
+
+    try {
+        const target = await usersColl.findOne({ email: email });
+        if (!target) {
+            return res.json({ success: false, message: "Couldn't find target user for update." });
+        }
+
+        // Ensure there is always >= 1 admin
+        const numAdmins = await usersColl.countDocuments({ type: "admin" });
+        if ( target && target.type === "admin" && numAdmins <= 1) {
+            return res.json({ success: false, message: "Denied attempt to demote remaining admin." });
+        }
+
+        // Safely update type
+        await usersColl.updateOne(
+            { email: email },
+            { $set: { type: type } }
+        )
+
+        res.json({ success: true, message: `Updated email: ${email} to type: ${type}` });
+    } catch (error) {
+        console.error("Error patching employee:", error);
+        res.json({ success: false, message: "Server error patching employee." });
+    }
+});
+
+// Delete employee
+app.delete("/api/admin/employees", requireAdmin, async (req, res) => {
+    const { email } = req.body;
+    if (email === req.session.user.email) {
+        return res.json({ success: false, message: "Attempt to delete active session email." });
+    }
+
+    try {
+        // Ensure there is always >= 1 admin
+        const numAdmins = await usersColl.countDocuments({ type: "admin" });
+        const target = await usersColl.findOne({ email: email });
+        if ( target && target.type === "admin" && numAdmins <= 1) {
+            return res.json({ success: false, message: "Denied attempt to delete remaining admin." });
+        }
+
+        // Safely delete
+        const deletion = await usersColl.deleteOne({ email: email });
+        if (deletion.deletedCount === 0) {
+            return res.json({ success: false, message: "Couldn't find target user to delete." });
+        }
+
+        res.json({ success: true, message: `Deleted email: ${email}` });
+
+    } catch (error) {
+        console.error("Error deleting employee:", error);
+        res.json({ success: false, message: "Server error deleting employee." });
+    }
+});
+
+
 startServer();
