@@ -2,11 +2,31 @@ var workingEmployees;
 var shiftIndex = 0;
 var pendingRequests = [];
 
+function toggleSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    const dashboard = document.getElementById("dashboard");
+    const toggleBtn = document.getElementById("sidebar-toggle");
+
+    sidebar.classList.toggle("collapsed");
+
+    if (dashboard) {
+        dashboard.classList.toggle("sidebar-collapsed");
+    }
+
+    if (sidebar.classList.contains("collapsed")) {
+        toggleBtn.innerHTML = "&#9654;";
+    }
+    else {
+        toggleBtn.innerHTML = "&#9776;";
+    }
+}
+
 async function renderSidebar() {
     const sideLinks = document.getElementById("side-links");
     const navButtons = document.getElementById("side-buttons");
     const rescheduleRequest = document.getElementById("reschedule-request");
     const rescheduleButtons = document.getElementById("reschedule-buttons");
+    
     if (!sideLinks || !navButtons || !rescheduleRequest) return;
     sideLinks.innerHTML = "";
 

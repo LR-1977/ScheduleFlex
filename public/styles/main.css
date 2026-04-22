@@ -185,11 +185,78 @@ button {
     bottom:0;
     width: 150px;
     height: 100%;
-    overflow: hidden;
+    overflow: visible;
 
     background-color: var(--navy);
     color: white;
     padding: 10px;
+
+    transition: width 0.3s ease;
+    z-index: 10;
+}
+
+.sideBar.collapsed {
+    width: 0px;
+    padding: 10px 0px;
+}
+
+.sideBar.collapsed .sidebar-content {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+sidebar-content {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: nowrap;
+}
+
+.sidebar-tab {
+    position: absolute;
+    top: 40px;
+    right: -18px;
+    width: 18px;
+    height: 44px;
+    background-color: var(--navy);
+    border-radius: 0 6px 6px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 11;
+    transition: background-color 0.2s;
+}
+
+.sidebar-tab:hover {
+    background-color: var(--navy-hover);
+}
+
+.sidebar-tab-arrow {
+    color: white;
+    font-size: 0.7rem;
+    line-height: 1;
+    transition: transform 0.3s ease;
+}
+
+.sideBar.collapsed .sidebar-tab-arrow {
+    transform: rotate(180deg);
+}
+
+.dashboard {
+    margin-left: 220px;
+    display: grid;
+    grid-column-start: 1;
+    gap: 20px;
+    padding: 20px;
+    transition: margin-left 0.3s ease;
+}
+
+.dashboard.sidebar-collapsed {
+    margin-left: 60px;
 }
 
 .side-list{
