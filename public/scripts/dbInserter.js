@@ -1,7 +1,7 @@
 /**
  * ScheduleFlex v 0.1
  * This is a database setup script that will insert data into the database.
- * 
+ *
  * This is designed for each person to test on the database together.
  *
  */
@@ -22,14 +22,14 @@ function hashPassword(password) {
 
 /**
  * Inserts test data into the database.
- * 
+ *
  * This program wull use our old hard coded databases and put them into legitinate databases.
  */
 async function seedDatabase() {
     try {
         await client.connect();
         console.log("Connected to MongoDB for seeding...");
-        
+
         const db = client.db("schedFlexDB");
 
         // 1. Clear existing data (ensures a clean slate for us)
@@ -40,9 +40,9 @@ async function seedDatabase() {
 
         // 2. Insert Test Users
         const testUsers = [
-            { email: "user1@gmail.com", ...hashPassword("12345"), type: "admin", name: 'Admin User'},
-            { email: "user2@gmail.com", ...hashPassword("pass123"), type: "user", name: 'Alice Smith'},
-            { email: "user3@gmail.com", ...hashPassword("password$abc"), type: "user", name: 'Bob Jones'}
+            { email: "user1@gmail.com", ...hashPassword("12345"), role: "admin", name: 'Admin User'},
+            { email: "user2@gmail.com", ...hashPassword("pass123"), role: "user", name: 'Alice Smith'},
+            { email: "user3@gmail.com", ...hashPassword("password$abc"), role: "user", name: 'Bob Jones'}
         ];
         await db.collection("userCollection").insertMany(testUsers);
         console.log(`Inserted ${testUsers.length} test users.`);
