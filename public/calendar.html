@@ -33,13 +33,18 @@
         </div>
 
         <div id="sidebar" class="sideBar" >
-            <div id ="side-title">Miraculous Manager's Manpower Manifest</div>
-            <nav>
-                <ul id="side-links" class="side-list"></ul>
-                <ul id="side-buttons" class="side-buttons"></ul>
-                <ul id="reschedule-request" class="side-list"></ul>
-                <ul id="reschedule-buttons" class="side-buttons"></ul>
-            </nav>
+            <div id="sidebar-tab" class="sidebar-tab" onclick="toggleSidebar()" title="Toggle Sidebar">
+                <span class="sidebar-tab-arrow">&#9664;</span>
+            </div>
+            <div class="sidebar-content">
+                <div id ="side-title">Miraculous Manager's Manpower Manifest</div>
+                <nav>
+                    <ul id="side-links" class="side-list"></ul>
+                    <ul id="side-buttons" class="side-buttons"></ul>
+                    <ul id="reschedule-request" class="side-list"></ul>
+                    <ul id="reschedule-buttons" class="side-buttons"></ul>
+                </nav>
+            </div>
         </div>
         <!-- Calendar -->
         <main id="dashboard" class="dashboard">
