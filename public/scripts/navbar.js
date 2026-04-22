@@ -19,7 +19,7 @@ async function renderNavbar() {
         // Depending on when the user is an administrator or not, we show different links.
         if (role === "admin") {
             links.push({ name: "Approvals", href: "/admin-requests.html" });
-            links.push({ name: "Staff Management", href: "#" });
+            links.push({ name: "Staff Management", href: "/staff-management.html" });
         } else {
             links.push({ name: "My Schedule", href: "#" });
             links.push({ name: "Request Change", href: "/request-form.html" });
