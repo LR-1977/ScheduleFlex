@@ -430,6 +430,7 @@ app.post("/api/requests/:id/decision", requireAdmin, async (req, res) => {
 // Assign Shift
 app.post("/api/admin/assign", requireAdmin, async (req, res) => {
     const { shift, employees } = req.body;
+
     if (!Array.isArray(employees)) {
         return res.status(406).json({ success: false, messsage: "Cant assign users to shift, expected type Array of user(s)."});
     }
@@ -445,14 +446,14 @@ app.post("/api/admin/assign", requireAdmin, async (req, res) => {
         // Handle existing rewrite of existing assignment as a swap, allow admins
         // to override swapping, need to email all involved
         if (scheduled) {
-            await eventsColl.updateOne(
+            const result = await eventsColl.updateOne(
                 { _id: scheduled._id },
                 { $set: { assignedUsers: employees } }
             );
         }
         // No existing shift: New assignment, need email update
         else {
-            await eventsColl.insertOne({
+            const result = await eventsColl.insertOne({
                 monthYear: shift.monthYear,
                 day: shift.day,
                 start: shift.start,

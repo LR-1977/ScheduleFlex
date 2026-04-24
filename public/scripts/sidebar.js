@@ -152,7 +152,7 @@ async function renderSidebar() {
 
 
     // here is for the sidebar height
-    sidebarHeight();
+    // sidebarHeight();
 
     } catch (error) {
         console.error("Failed to load sidebar", error);
@@ -264,7 +264,7 @@ async function getAssignShiftForm() {
 
     // Day
     const dayInput = document.getElementById("day-input");
-    const currDay = new Date().getDay();
+    const currDay = new Date().getDate();
     dayInput.value = Math.min(currDay + 1, 28); // setting a safe auto-fill
 
     // Year
@@ -319,7 +319,6 @@ async function getAssignShiftForm() {
 
         // assignedUsers = employees = separate field of req body
         const shift = { monthYear: monthYear, day: day, start: start, stop: stop, desc: desc, overnight: overnight };
-        console.log("SHIFT ASSIGNED:", shift);
 
         try {
             const res = await fetch("/api/admin/assign", {
@@ -765,10 +764,12 @@ function getManagerDisplayedShift(shift) {
     document.getElementById("side-links").appendChild(li);
 }
 
+
+
+/*
 function sidebarHeight() {
-    /*WHEN REMOVING THE TEMP SWITCH ROLE BUTTON IN THIS FUNCTION:
-        remove the line initializing tempControls and change the active line of code in the if statement
-    */
+    //WHEN REMOVING THE TEMP SWITCH ROLE BUTTON IN THIS FUNCTION:
+    //    remove the line initializing tempControls and change the active line of code in the if statement
 
     const sidebar = document.getElementById("sidebar");
     const navLinks = document.getElementById("main-header");
@@ -784,6 +785,8 @@ function sidebarHeight() {
         sidebar.style.minHeight = ""+(dashboard.offsetHeight)+"px";
     }
 }
+*/
+
 
 
 
