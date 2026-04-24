@@ -343,7 +343,7 @@ app.post("/api/requests/swap", requireLogin, async (req, res) => {
         targetShiftId: new ObjectId(targetShiftId)
     });
     if (existing) {
-        return res.status(409).json({ success: false, message: "A pending swap request forthese shifts already exist." });
+        return res.status(409).json({ success: false, message: "A pending swap request for these shifts already exist." });
     }
 
     await requestsColl.insertOne({
@@ -429,9 +429,9 @@ app.post("/api/requests/:id/decision", requireAdmin, async (req, res) => {
 
 // Assign Shift
 app.post("/api/admin/assign", requireAdmin, async (req, res) => {
-    const { shift, assignees } = req.body;
-    if (!Array.isArray(assignees)) {
-        return res.json({ success: false, messsage: "Cant assign users to shift, expected type Array of user(s)."});
+    const { shift, employees } = req.body;
+    if (!Array.isArray(employees)) {
+        return res.status(406).json({ success: false, messsage: "Cant assign users to shift, expected type Array of user(s)."});
     }
 
     try {
@@ -447,7 +447,7 @@ app.post("/api/admin/assign", requireAdmin, async (req, res) => {
         if (scheduled) {
             await eventsColl.updateOne(
                 { _id: scheduled._id },
-                { $set: { assignedUsers: assignees } }
+                { $set: { assignedUsers: employees } }
             );
         }
         // No existing shift: New assignment, need email update
@@ -459,13 +459,13 @@ app.post("/api/admin/assign", requireAdmin, async (req, res) => {
                 stop: shift.stop,
                 desc: shift.desc,
                 overnight: shift.overnight,
-                assignedUsers: assignees
+                assignedUsers: employees
             });
         }
-        res.json({ success: true, message: `Successfully assigned shift to: ${assignees}` })
+        return res.status(200).json({ success: true, message: `Successfully assigned shift to: ${employees}` })
     } catch (error) {
         console.error("Error fetching/patching employees:", error);
-        res.json({ sucess: false, message: "Server error assigning shift." });
+        return res.status(500).json({ success: false, message: "Server error assigning shift." });
     }
 });
 

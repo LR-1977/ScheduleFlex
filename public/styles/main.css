@@ -210,7 +210,7 @@ sidebar-content {
     opacity: 1;
     visibility: visible;
     transition: opacity 0.2s ease, visibility 0.2s ease;
-    overflow-y: auto;
+    overflow-y: scroll;
     overflow-x: hidden;
     white-space: nowrap;
 }
