@@ -2,6 +2,8 @@
 let currentDisplayDate = new Date();
 let currentUser = null;
 let currentEvents = [];
+let calendarView = "monthly";
+
 
 async function loadSessionAndEvents() {
     try {
@@ -42,6 +44,14 @@ async function renderCalendar() {
     const monthDisplay = document.getElementById("month-display");
 
     if (!grid || !monthDisplay) return;
+
+    if (calendarView === "weekly") {
+        renderWeeklyCalendar();
+        return;
+    }
+
+    grid.classList.remove("weekly-view");
+
 
     // Clear Grid
     grid.innerHTML = "";
@@ -102,10 +112,116 @@ async function renderCalendar() {
 
 }
 
+function renderWeeklyCalendar() {
+    const grid = document.getElementById("calendar-grid");
+    const monthDisplay = document.getElementById("month-display");
+
+    if (!grid || !monthDisplay) return;
+
+    grid.innerHTML = "";
+    grid.classList.add("weekly-view");
+
+    // Find Sunday of the current week
+    const weekStart = new Date(currentDisplayDate);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    // Header text showing the date range
+    const fmt = { month: "short", day: "numeric" };
+    const yearStr = weekEnd.getFullYear();
+    monthDisplay.innerText =
+        `${weekStart.toLocaleDateString("en-US", fmt)} – ${weekEnd.toLocaleDateString("en-US", fmt)}, ${yearStr}`;
+
+    // Day-of-week labels
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    days.forEach((day) => {
+        const el = document.createElement("div");
+        el.className = "day-label";
+        el.innerText = day;
+        grid.appendChild(el);
+    });
+
+    const today = new Date();
+
+    // One cell per day of the week
+    for (let i = 0; i < 7; i++) {
+        const cellDate = new Date(weekStart);
+        cellDate.setDate(cellDate.getDate() + i);
+
+        const cell = document.createElement("div");
+        cell.className = "calendar-day";
+        cell.dataset.day = String(cellDate.getDate());
+
+        const dateLabel = cellDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        cell.innerHTML = `<div class="day-number">${dateLabel}</div>`;
+
+        // Mute days outside current month
+        if (cellDate.getMonth() !== currentDisplayDate.getMonth()) {
+            cell.classList.add("muted");
+        }
+
+        // Highlight today
+        if (
+            cellDate.getDate() === today.getDate() &&
+            cellDate.getMonth() === today.getMonth() &&
+            cellDate.getFullYear() === today.getFullYear()
+        ) {
+            cell.classList.add("today");
+        }
+
+        grid.appendChild(cell);
+    }
+
+    // Populate events for each day in the week
+    for (let i = 0; i < 7; i++) {
+        const cellDate = new Date(weekStart);
+        cellDate.setDate(cellDate.getDate() + i);
+
+        const monthYear = new Intl.DateTimeFormat("en-US", { month: "long" }).format(cellDate) + " " + cellDate.getFullYear();
+        const dayNum = cellDate.getDate();
+
+        // Temporarily set data-day for populateCalendar's getCell to work
+        // (already set above), just call populateCalendar for this specific monthYear
+        populateCalendarDay(currentEvents, monthYear, dayNum);
+    }
+}
+
 
 
 function changeMonth(offset) {
     currentDisplayDate.setMonth(currentDisplayDate.getMonth() + offset);
+    renderCalendar();
+}
+
+function changeWeek(offset) {
+    currentDisplayDate.setDate(currentDisplayDate.getDate() + (offset * 7));
+    renderCalendar();
+}
+
+function toggleCalendarView() {
+    const toggleBtn = document.getElementById("view-toggle");
+    const prevBtn = document.getElementById("btn-prev");
+    const nextBtn = document.getElementById("btn-next");
+
+    if (calendarView === "monthly") {
+        calendarView = "weekly";
+        toggleBtn.innerText = "Monthly View";
+        prevBtn.setAttribute("onclick", "changeWeek(-1)");
+        nextBtn.setAttribute("onclick", "changeWeek(1)");
+        prevBtn.innerText = "Prev Week";
+        nextBtn.innerText = "Next Week";
+    }
+    else {
+        calendarView = "monthly";
+        toggleBtn.innerText = "Weekly View";
+        prevBtn.setAttribute("onclick", "changeMonth(-1)");
+        nextBtn.setAttribute("onclick", "changeMonth(1)");
+        prevBtn.innerText = "Prev Month";
+        nextBtn.innerText = "Next Month";
+    }
+
     renderCalendar();
 }
 
@@ -152,6 +268,36 @@ function populateCalendar(items, displayedMonthYear) {
         // overnight continuation
         if (item.overnight) {
             const nextDay = item.day + 1;
+            const cont = `<span class="shift">overnight-${item.stop}</span>`;
+            appendCell(nextDay, cont);
+        }
+    }
+}
+
+function populateCalendarDay(items, monthYear, dayNum) {
+    for (const item of items) {
+        if (item.monthYear !== monthYear || item.day !== dayNum) continue;
+
+        let toDisplay = `<span class='shift'>` + item.start;
+
+        if (!item.overnight) {
+            toDisplay += "-" + item.stop;
+        } else {
+            toDisplay += "-overnight";
+        }
+        if (item.desc && item.desc.length > 0) {
+            toDisplay += `<br />${item.desc}`;
+        }
+
+        if (currentUser && currentUser.role === "admin" && Array.isArray(item.assignedUsers) && item.assignedUsers.length > 0) {
+            toDisplay += `<br />${item.assignedUsers.join(' ')}`;
+        }
+
+        toDisplay += "</span>";
+        appendCell(dayNum, toDisplay);
+
+        if (item.overnight) {
+            const nextDay = dayNum + 1;
             const cont = `<span class="shift">overnight-${item.stop}</span>`;
             appendCell(nextDay, cont);
         }

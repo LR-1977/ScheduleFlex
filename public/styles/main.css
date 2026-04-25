@@ -107,6 +107,26 @@ body {
     overflow: hidden;
 }
 
+.view-toggle {
+    background: var(--accent);
+    color: black;
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 8px 14px; 
+}
+
+.view-toggle:hover {
+    background: var(--accent-hover);
+}
+
+.calendar-grid.weekly-view {
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-grid.weekly-view .calendar-day {
+    min-height: 200px;
+}
+
 .day-label {
     background-color: var(--bg-surface);
     padding: 10px;
