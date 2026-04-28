@@ -87,7 +87,7 @@ async function sendUserNotifications() {
     const month = date.toLocaleString("default", {"month":"long"});
     const year = date.getFullYear();
     
-    let event = await eventsColl.find({"day":day, "monthYear": `{month} {year}`});
+    let event = await eventsColl.find({"day":day, "monthYear": `${month} ${year}`});
 
     //create manager daily shift schedule
     let employees = [];
