@@ -112,9 +112,9 @@ async function sendUserNotifications() {
                 continue;
             }
             if (user.role == "user") {
-                driverEmail(email,date);
+                await driverEmail(email,date);
             } else {
-                managerEmail(email,date,employees);
+                await managerEmail(email,date,employees);
             }
             
         }
