@@ -36,7 +36,7 @@ async function sendEmail(data) {
 }
 
 async function managerEmail(email, date, employees) {
-    const emailBody = `Greetings ${name},\n` +
+    const emailBody = `Greetings,\n` +
                 `Your upcoming shift on ${date} will have the following employees:\n` +
                 `${employees.join("\n")}`
     const payload = {
@@ -80,15 +80,20 @@ async function mongoConnect() {
     }
 }
 
-function sendUserNotifications() {
-    const day = new Date().getDate() + 1;
-    let event = await eventsColl.find({"day":day});
+async function sendUserNotifications() {
+    const date = new Date();
+    date.setDate(date.getDate()+1);
+    const day = date.getDate();
+    const month = date.toLocaleString("default", {"month":"long"});
+    const year = date.getFullYear();
+    
+    let event = await eventsColl.find({"day":day, "monthYear": `{month} {year}`});
 
     //create manager daily shift schedule
     let employees = [];
     for (let shift of event) {
         let date = " "+ shift.start +"-" +shift.stop;
-        for (let employee of shift.asignedUsers) {
+        for (let employee of shift.assignedUsers) {
             employees.push(" "+employee +":"+ date);
         }
     }
@@ -117,21 +122,12 @@ function sendUserNotifications() {
 
 }
 
-function sendManagerNotifications() {
-    const day = new Date().getDate() + 1;
-    let event = await eventsColl.find({"day":day});
-    
-}
 //below gets ran on the daily run of the file
-function main() {
+async function main() {
     if (!await mongoConnect()){
         return;
     }
-    sendUserNotifications();
-
-
-
+    await sendUserNotifications();
 }
 main();
-
 
