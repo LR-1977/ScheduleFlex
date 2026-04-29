@@ -182,4 +182,39 @@ document.addEventListener("DOMContentLoaded", () => {
     if (tableBody) {
         tableBody.addEventListener("click", handleEmployeeEdits);
     }
+   
+
+    const triggerBtn = document.getElementById("trigger-notifications-btn");
+    if (triggerBtn) {
+        triggerBtn.addEventListener("click", handleTriggerNotifications);
+    }
 });
+
+
+
+// Handle manual notification trigger.
+async function handleTriggerNotifications() {
+    const btn = document.getElementById("trigger-notifications-btn");
+    btn.disabled = true;
+    btn.textContent = "Processing...";
+
+    try {
+        const response = await fetch('/api/admin/notify/tomorrow', {
+            method: 'POST'
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage(data.message, true);
+        } else {
+            showMessage(data.message || "Failed to trigger notifications.", false);
+        }
+    } catch (error) {
+        showMessage("Network error while triggering notifications.", false);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Send Tomorrow's Shift Reminders";
+    }
+}
+
+// Add this inside your existing DOMContentLoaded listener

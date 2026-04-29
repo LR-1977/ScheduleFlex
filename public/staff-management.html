@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,11 +8,29 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <style>
         /* Quick styles for the employee table */
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #ccc; }
-        .admin-badge { background: #007bff; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th,
+        td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .admin-badge {
+            background: #007bff;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
+
 <body>
     <header class="main-header">
         <div class="logo">Schedule<span>Flex</span></div>
@@ -23,18 +42,28 @@
     <main class="dashboard">
         <section class="management-container">
             <h2>Staff Management</h2>
-            
+
             <div id="status-msg" style="padding: 10px; margin-bottom: 10px; display: none; border-radius: 5px;"></div>
 
-            <div class="invite-section" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <div class="invite-section"
+                style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                 <h3>Invite New Employee</h3>
                 <form id="invite-form">
                     <label for="invite-email">Employee Email Address:</label>
-                    <input type="email" id="invite-email" required placeholder="new.hire@example.com" style="padding: 5px; width: 250px;">
+                    <input type="email" id="invite-email" required placeholder="new.hire@example.com"
+                        style="padding: 5px; width: 250px;">
                     <button type="submit" style="padding: 6px 12px;">Send Invite</button>
                 </form>
             </div>
-
+            <div class="notification-section"
+                style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3>System Automations</h3>
+                <p>Nightly reminders for tomorrow's shifts (demo trigger).</p>
+                <button id="trigger-notifications-btn"
+                    style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Send Tomorrow's Shift Reminders
+                </button>
+            </div>
             <div class="employee-list-section">
                 <h3>Current Staff</h3>
                 <table>
@@ -46,7 +75,9 @@
                         </tr>
                     </thead>
                     <tbody id="employee-table-body">
-                        <tr><td colspan="3">Loading employees...</td></tr>
+                        <tr>
+                            <td colspan="3">Loading employees...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -56,4 +87,5 @@
     <script src="/scripts/navbar.js"></script>
     <script src="/scripts/staff-management.js"></script>
 </body>
+
 </html>

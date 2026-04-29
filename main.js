@@ -13,7 +13,8 @@ let db, usersColl, invitationsColl, eventsColl, requestsColl;
 
 const SMTP_HOST = "mail.orvik.com";
 const SMTP_USER = "scheduleflex.notifications";
-const SMTP_PASS = "PASSWORD"; // replace w/ actual password when testing. DO NOT SHARE THIS PW TO GITHUB
+const SMTP_PASS = "PUT+PASSWORD+HERE"; // replace w/ actual password when testing. DO NOT SHARE THIS PW TO GITHUB
+
 
 const transporter = nodemailer.createTransport({
     host: SMTP_HOST,
@@ -578,6 +579,90 @@ app.delete("/api/admin/employees", requireAdmin, async (req, res) => {
     } catch (error) {
         console.error("Error deleting employee:", error);
         res.json({ success: false, message: "Server error deleting employee." });
+    }
+});
+
+// Send emails per shift time/date
+async function sendDriverNotification(email, dateStr) {
+    try {
+        await transporter.sendMail({
+            from: `"ScheduleFlex Admin" <${SMTP_USER}>`,
+            to: email,
+            subject: "Automated shift notification.",
+            text: `Greetings,\n\nThis is an automated notification about your upcoming shift on ${dateStr}`
+        });
+        console.log(`Driver notification sent to ${email}`);
+    } catch (err) {
+        console.error(`Failed to send driver email to ${email}:`, err);
+    }
+}
+
+async function sendManagerNotification(email, dateStr, employees) {
+    try {
+        await transporter.sendMail({
+            from: `"ScheduleFlex Admin" <${SMTP_USER}>`,
+            to: email,
+            subject: "Automated shift notification.",
+            text: `Greetings,\n\nYour upcoming shift on ${dateStr} will have the following employees:\n${employees.join("\n")}`
+        });
+        console.log(`Manager notification sent to ${email}`);
+    } catch (err) {
+        console.error(`Failed to send manager email to ${email}:`, err);
+    }
+}
+
+app.post("/api/admin/notify/tomorrow", requireAdmin, async (req, res) => {
+    // Calculate tomorrow's date
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    const day = date.getDate();
+    const month = date.toLocaleString("default", { "month": "long" });
+    const year = date.getFullYear();
+    const monthYear = `${month} ${year}`;
+
+    try {
+        // Find tomorrow's shifts (Added .toArray() to fix the cursor exhaustion bug from emailCaller).
+        const shiftsTomorrow = await eventsColl.find({ day: day, monthYear: monthYear }).toArray();
+
+        if (shiftsTomorrow.length === 0) {
+            return res.json({ success: true, message: "No shifts scheduled for tomorrow to notify about." });
+        }
+
+        // Create manager daily shift schedule overview.
+        let employees = [];
+        for (let shift of shiftsTomorrow) {
+            let timeSlot = ` ${shift.start}-${shift.stop}`;
+            if (shift.assignedUsers) {
+                for (let employee of shift.assignedUsers) {
+                    employees.push(` ${employee}:${timeSlot}`);
+                }
+            }
+        }
+
+        // Send emails
+        let emailsSent = 0;
+        for (let shift of shiftsTomorrow) {
+            if (!shift.assignedUsers) continue;
+
+            for (let employee of shift.assignedUsers) {
+                const shiftDateStr = `${monthYear} ${shift.day} ${shift.start}-${shift.stop}`;
+
+                let user = await usersColl.findOne({ email: employee });
+                if (!user) continue;
+
+                if (user.role === "user") {
+                    await sendDriverNotification(employee, shiftDateStr);
+                } else if (user.role === "admin") {
+                    await sendManagerNotification(employee, shiftDateStr, employees);
+                }
+                emailsSent++;
+            }
+        }
+
+        res.json({ success: true, message: `Successfully sent ${emailsSent} notifications for tomorrow's shifts.` });
+    } catch (error) {
+        console.error("Error running daily notifications:", error);
+        res.status(500).json({ success: false, message: "Server error triggering notifications." });
     }
 });
 
