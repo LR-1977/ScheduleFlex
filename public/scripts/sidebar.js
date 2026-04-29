@@ -17,7 +17,7 @@ function toggleSidebar() {
         toggleBtn.innerHTML = "&#9654;";
     }
     else {
-        toggleBtn.innerHTML = "&#9776;";
+        toggleBtn.innerHTML = "&#9664;";
     }
 }
 

@@ -13,7 +13,7 @@ let db, usersColl, invitationsColl, eventsColl, requestsColl;
 
 const SMTP_HOST = "mail.orvik.com";
 const SMTP_USER = "scheduleflex.notifications";
-const SMTP_PASS = "PUT_PASS_HERE"; // replace w/ actual password when testing. DO NOT SHARE THIS PW TO GITHUB
+const SMTP_PASS = "PASSWORD"; // replace w/ actual password when testing. DO NOT SHARE THIS PW TO GITHUB
 
 const transporter = nodemailer.createTransport({
     host: SMTP_HOST,
